@@ -5,7 +5,6 @@ from pandas import DataFrame
 from pandas.io.parsers import TextFileReader
 
 from support import *
-from support.DataProc import split_train_test
 
 from matplotlib import pyplot as plt
 
