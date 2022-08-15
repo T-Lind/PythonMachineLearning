@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from numpy import ndarray
 from pandas import DataFrame
 
 import joblib
@@ -76,7 +77,7 @@ X_test_prepared = full_pipeline.transform(X_test)
 
 
 # Perform predictions
-final_predictions = model.predict(X_test_prepared)
+final_predictions: ndarray = model.predict(X_test_prepared)
 
 
 # Calculate RMSE from the predictions

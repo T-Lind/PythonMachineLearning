@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from numpy import ndarray
 from pandas import DataFrame
 
 import joblib
@@ -42,7 +43,7 @@ housing_option1.dropna(subset=["quality"], inplace=True)  # option 1
 
 # Construct a pipeline
 num_pipeline: Pipeline = make_pipeline(SimpleImputer(strategy="median"), StandardScaler())
-train = num_pipeline.fit_transform(train)
+train: ndarray = num_pipeline.fit_transform(train)
 
 attribs = list(train)
 
@@ -60,7 +61,7 @@ grid_search = GridSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squar
 grid_search.fit(train, train_labels)
 
 # Get the best model
-model = grid_search.best_estimator_
+model: RandomForestRegressor = grid_search.best_estimator_
 
 # Store the best model
 joblib.dump(model, "wine_forest_reg_model.pkl")
@@ -71,12 +72,12 @@ y_test: DataFrame = test["quality"].copy()
 
 # Prepare the input test data and perform predictions
 X_test_prepared: DataFrame = num_pipeline.transform(X_test)
-final_predictions = model.predict(X_test_prepared)
+final_predictions: ndarray = model.predict(X_test_prepared)
 
 # Calculate RMSE from the predictions and the labels (y_test)
 final_mse = mean_squared_error(y_test, final_predictions)
 print("RMSE", np.sqrt(final_mse))
 
 input_data = [[6.6, 0.3, 0.18, 7.5, 0.05, 32, 128, 0.99, 3.22, 0.50, 12]]
-input_prediction = model.predict(input_data)
+input_prediction: ndarray = model.predict(input_data)
 print(input_prediction)
