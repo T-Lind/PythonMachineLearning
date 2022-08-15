@@ -13,3 +13,4 @@ def split_train_test(data: DataFrame, catName: str, test_ratio=0.2, random_state
         strat_test_set = data.loc[test_index]
 
     return strat_train_set, strat_test_set
+
