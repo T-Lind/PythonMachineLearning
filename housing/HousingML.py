@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from pandas import DataFrame
 from scipy.sparse import csr_matrix
 
@@ -8,7 +9,9 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import mean_squared_error
+from sklearn.ensemble import RandomForestRegressor
 
 from sklearn import set_config
 
@@ -73,12 +76,24 @@ full_pipeline = ColumnTransformer([
 # Generate the prepared data
 housing_prepared = full_pipeline.fit_transform(housing)
 
-# Create a linear regressor
-lin_reg = LinearRegression()
-lin_reg.fit(housing_prepared, housing_labels)
+# Create predictions using a Decision Tree Regressor and automatically tweak hyperparameters using a Grid Search
 
-data = housing.iloc[:5]
-labels = housing_labels.iloc[:5]
+param_grid = [
+    {'n_estimators': [3, 10, 30], 'max_features':[2, 4, 6, 8]},
+    {'bootstrap': [False], 'n_estimators': [3, 10], 'max_features': [2, 3, 4]},
+]
 
-data_prepared = full_pipeline.transform(data)
-print("Predictions:", lin_reg.predict(data_prepared))
+forest_reg = RandomForestRegressor()
+forest_reg.fit(housing_prepared, housing_labels)
+
+grid_search = GridSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error', return_train_score=True)
+grid_search.fit(housing_prepared, housing_labels)
+
+housing_predictions = forest_reg.predict(housing_prepared)
+forest_mse = mean_squared_error(housing_labels, housing_predictions)
+forest_rmse = np.sqrt(forest_mse)
+
+cvres: dict = grid_search.cv_results_
+for mean_score, params in zip(cvres["mean_test_score"], cvres["params"]):
+    print(np.sqrt(-mean_score), params)
+

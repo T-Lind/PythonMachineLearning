@@ -1,2 +1,4 @@
-# Path to my datasets
+"""
+Path to datasets
+"""
 DATASETS = "C:\\Users\\zenith\\Documents\\MyDatasets\\"
