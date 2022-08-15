@@ -108,7 +108,7 @@ display_scores(rmse_scores)
 # Get the best possible model from the grid search
 final_model = grid_search.best_estimator_
 
-filename = "svc_reg_model.pkl"
+filename = "forest_reg_model.pkl"
 joblib.dump(final_model, filename)
 
 # Load up the split test data, removing the median house value from the X input data
