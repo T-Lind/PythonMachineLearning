@@ -1,12 +1,8 @@
 import numpy as np
 from numpy import ndarray
 from sklearn.datasets import fetch_openml
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from sklearn.ensemble import VotingClassifier, RandomForestClassifier, AdaBoostClassifier, StackingClassifier
-from sklearn.model_selection import cross_val_predict, GridSearchCV, RandomizedSearchCV
-from sklearn.metrics import confusion_matrix, precision_score, recall_score, roc_curve, accuracy_score
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, StackingClassifier
+from sklearn.metrics import precision_score, recall_score, accuracy_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
