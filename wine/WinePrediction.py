@@ -7,14 +7,14 @@ import joblib
 from pandas.plotting import scatter_matrix
 from sklearn import set_config
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, VotingClassifier
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import mean_squared_error
-
+from sklearn.metrics import mean_squared_error, accuracy_score
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-
+from sklearn.svm import SVC
 import matplotlib.pyplot as plt
 
 from support import *
@@ -49,23 +49,24 @@ train: ndarray = num_pipeline.fit_transform(train)
 attribs = list(train)
 
 
-param_grid = [
-    {'n_estimators': [3, 10, 30], 'max_features':[2, 4, 6, 8]},
-    {'bootstrap': [False], 'n_estimators': [3, 10], 'max_features': [2, 3, 4]},
-]
+# param_grid = [
+#     {'n_estimators': [200, 250, 300, 350], 'max_features':[0.5, 0.1, 1]},
+# ]
 
-forest_reg = RandomForestRegressor()
+forest_reg = RandomForestRegressor(n_estimators=300, max_features=0.5)
 forest_reg.fit(train, train_labels)
 
 # Use a grid search to find the right hyperparameters
-grid_search = RandomizedSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error', return_train_score=True)
-grid_search.fit(train, train_labels)
+# grid_search = RandomizedSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error', return_train_score=True)
+# grid_search.fit(train, train_labels)
 
 # Get the best model
-model: RandomForestRegressor = grid_search.best_estimator_
+# model: RandomForestRegressor = grid_search.best_estimator_
+# print(grid_search.best_params_)
+model = forest_reg
 
 # Store the best model
-joblib.dump(model, "models/wine_forest_reg_model.pkl")
+joblib.dump(model, "../models/wine_forest_reg_model.pkl")
 
 # Get the test data
 X_test: DataFrame = test.drop("quality", axis=1)
@@ -74,6 +75,8 @@ y_test: DataFrame = test["quality"].copy()
 # Prepare the input test data and perform predictions
 X_test_prepared: DataFrame = num_pipeline.transform(X_test)
 final_predictions: ndarray = model.predict(X_test_prepared)
+
+# print("ACCURACY: ", accuracy_score(y_test, final_predictions))
 
 # Calculate RMSE from the predictions and the labels (y_test)
 final_mse = mean_squared_error(y_test, final_predictions)

@@ -3,12 +3,13 @@ from numpy import ndarray
 from sklearn.datasets import fetch_openml
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
+from sklearn.ensemble import VotingClassifier, RandomForestClassifier, AdaBoostClassifier, StackingClassifier
 from sklearn.model_selection import cross_val_predict, GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, roc_curve, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 
 # Get the MNIST dataset
 from sklearn.utils import Bunch
@@ -25,23 +26,27 @@ y = y.astype(np.uint8)
 
 # Split the train and test data and scale it
 X_train, X_test, y_train, y_test = X[:60000], X[60000:], y[:60000], y[60000:]
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.fit_transform(X_test)
 
-k_clf = KNeighborsClassifier()
-k_clf.fit(X_train[:1000], y_train[:1000])
+# Use four classifiers and combine them with voting, then use an AdaBoostClassifier to boost the output
+# k_clf = KNeighborsClassifier(weights="distance", algorithm="ball_tree")
+log_clf = LogisticRegression()
+rnd_clf = RandomForestClassifier()
+svm_clf = SVC()
 
-# All the options to use
-param_grid = [{'algorithm': ["ball_tree"], 'leaf_size': [5, 10, 30, 50], 'p': [1, 2, 3, 4], 'n_jobs':[None, -1]}]
+stacking_clf = StackingClassifier(
+    estimators=[('lr', log_clf), ('rf', rnd_clf), ('svc', svm_clf)],
+    cv=3
+)
 
-# Use a grid search to find the right hyperparameters
-grid_search = RandomizedSearchCV(k_clf, param_grid, cv=5, scoring='neg_mean_squared_error', return_train_score=True)
-grid_search.fit(X_train[:2000], y_train[:2000])
+ada_clf = AdaBoostClassifier(stacking_clf, n_estimators=200, algorithm="SAMME", learning_rate=0.5)
+ada_clf.fit(X_train[:1000], y_train[:1000])
 
-print(grid_search.best_params_)
-
-best_model = grid_search.best_estimator_
+best_model = ada_clf
 
 y_test_pred = best_model.predict(X_test)
-
-print("Precision:", precision_score(y_test, y_test_pred, average="micro"))
+print("Precision:", precision_score(y_test, y_test_pred, average="weighted"))
 print("Accuracy:", accuracy_score(y_test, y_test_pred))
-print("Recall:", recall_score(y_test, y_test_pred, average="micro"))
+print("Recall:", recall_score(y_test, y_test_pred, average="weighted"))
