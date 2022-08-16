@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import mean_squared_error
 
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
@@ -37,12 +37,13 @@ train: DataFrame = train_with_quality.drop("quality", axis=1)
 train_labels = train_with_quality["quality"].copy()
 
 # Find null rows in the dataset
-null_rows_idx = wine.isnull().any(axis=1)
-housing_option1 = wine.copy()
-housing_option1.dropna(subset=["quality"], inplace=True)  # option 1
+wine = wine.dropna(subset=["quality"])
 
 # Construct a pipeline
-num_pipeline: Pipeline = make_pipeline(SimpleImputer(strategy="median"), StandardScaler())
+num_pipeline: Pipeline = make_pipeline(
+    SimpleImputer(strategy="median"),
+    StandardScaler(),
+)
 train: ndarray = num_pipeline.fit_transform(train)
 
 attribs = list(train)
@@ -57,14 +58,14 @@ forest_reg = RandomForestRegressor()
 forest_reg.fit(train, train_labels)
 
 # Use a grid search to find the right hyperparameters
-grid_search = GridSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error', return_train_score=True)
+grid_search = RandomizedSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error', return_train_score=True)
 grid_search.fit(train, train_labels)
 
 # Get the best model
 model: RandomForestRegressor = grid_search.best_estimator_
 
 # Store the best model
-joblib.dump(model, "wine_forest_reg_model.pkl")
+joblib.dump(model, "models/wine_forest_reg_model.pkl")
 
 # Get the test data
 X_test: DataFrame = test.drop("quality", axis=1)

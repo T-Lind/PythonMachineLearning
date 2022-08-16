@@ -17,9 +17,9 @@ from support import *
 
 # LOAD EXTERNAL FILES
 
-housing: DataFrame = pd.read_csv(DATASETS+"winequality-red.csv")
+housing: DataFrame = pd.read_csv(DATASETS+"housing.csv")
 
-filename = "forest_reg_model.pkl"
+filename = "housing_forest_reg_model.pkl"
 model = joblib.load(filename)
 
 
