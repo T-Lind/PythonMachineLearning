@@ -49,7 +49,7 @@ housing_labels = train["median_house_value"].copy()
 null_rows_idx = housing.isnull().any(axis=1)
 housing_option1 = housing.copy()
 housing_option1.dropna(subset=["total_bedrooms"], inplace=True)  # option 1
-housing_option1.loc[null_rows_idx].head()
+
 
 
 # Remove the ocean proximity column because it is not numerical (it's words, like close, far, etc.)
