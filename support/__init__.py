@@ -8,7 +8,6 @@ from sklearn.base import clone
 Path to datasets
 """
 DATASETS = "C:\\Users\\zenith\\Documents\\MyDatasets\\"
-DATASETS = "C:/Users/lindauer_927142/Downloads/"
 
 def display_scores(scores):
     """
