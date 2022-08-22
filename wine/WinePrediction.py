@@ -22,7 +22,7 @@ from support import *
 set_config(display='text')
 
 # Get the winequality-white.csv file from my datasets
-wine: DataFrame = pd.read_csv(DATASETS+"winequality-white.csv", delimiter=";")
+wine: DataFrame = pd.read_csv(DATASETS + "winequality-white.csv", delimiter=";")
 
 # Find item correlations
 corr_matrix: DataFrame = wine.corr()
