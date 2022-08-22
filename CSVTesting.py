@@ -7,7 +7,6 @@ from sklearn.model_selection import train_test_split
 
 from matplotlib import pyplot as plt
 
-
 winequality_red: TextFileReader | DataFrame = pd.read_csv(DATASETS + "winequality-red.csv", sep=";")
 
 # Print the first 5 elements of the dataset
