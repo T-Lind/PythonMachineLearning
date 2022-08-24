@@ -39,4 +39,3 @@ print(kmeans.cluster_centers_)
 plt.figure(figsize=(8, 4))
 plot_decision_boundaries(kmeans, X)
 plt.show()
-
