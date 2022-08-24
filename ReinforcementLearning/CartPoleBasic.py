@@ -2,13 +2,14 @@ import gym
 import keyboard
 import numpy as np
 
+# Load the CartPole game from OpenAIGym
 env = gym.make('CartPole-v1')
 obs = env.reset()
-
 
 def basic_policy(obs):
     angle = obs[2]
     return 0 if angle < 0 else 1
+
 
 
 totals = []
