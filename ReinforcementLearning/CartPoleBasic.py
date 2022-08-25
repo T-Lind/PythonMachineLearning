@@ -1,10 +1,13 @@
 import gym
 import keyboard
 import numpy as np
+import logging
 
 # Load the CartPole game from OpenAIGym
-env = gym.make('CartPole-v1')
+env = gym.make('CartPole-v1', render_mode='human')
+
 obs = env.reset()
+
 
 def basic_policy(obs):
     angle = obs[2]
@@ -23,9 +26,8 @@ for episode in range(500):
         if done:
             break
         if keyboard.is_pressed('q'):
-            break
-    if keyboard.is_pressed('q'):
-        break
+            exit()
     totals.append(episode_rewards)
+
 
 print(f"Max steps: {np.max(totals)}, Min steps: {np.min(totals)}, Std: {np.std(totals)}, Average: {np.mean(totals)}")
