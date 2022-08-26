@@ -3,7 +3,7 @@ import time
 import gym
 import numpy as np
 import tensorflow as tf
-from matplotlib import pyplot as plt, animation
+from matplotlib import pyplot as plt
 from tensorflow import keras
 import sys
 import warnings
@@ -21,13 +21,9 @@ np.random.seed(42)
 
 n_inputs = env.observation_space.shape[0]
 
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-
 n_environments = 50
 n_iterations = 1000
 
-plt.xlim(0, 10000)
 
 envs = [gym.make("CartPole-v1") for _ in range(n_environments)]
 for index, env in enumerate(envs):
@@ -43,7 +39,8 @@ training_times = []
 def train_reinforcement_network(n_layers, n_neurons, thresh=0.01):
     network_layers = [keras.layers.Dense(5, activation="elu", input_shape=[n_inputs])]
     for i in range(n_layers):
-        network_layers.append(keras.layers.Dense(n_neurons, activation="elu"))
+        network_layers.append(keras.layers.Dense(n_neurons, activation="selu", kernel_initializer="he_normal"))
+        network_layers.append(keras.layers.BatchNormalization())
     network_layers.append(keras.layers.Dense(1, activation="sigmoid"))
     model = keras.models.Sequential(network_layers)
 
@@ -64,52 +61,46 @@ def train_reinforcement_network(n_layers, n_neurons, thresh=0.01):
         for env_index, env in enumerate(envs):
             obs, reward, done, info = env.step(actions[env_index][0])
             observations[env_index] = obs if not done else env.reset()
+
+        if time.time()-start_time > 60*4:
+            break
+
         iteration += 1
 
-    train_time = time.time() - start_time
-    training_times.append(train_time)
+    if time.time()-start_time <= 60*4:
+        train_time = time.time() - start_time
+        training_times.append(train_time)
+    else:
+        training_times.append(-1)
 
     for env in envs:
         env.close()
 
 
-def update_scene(num, frames, patch):
-    patch.set_data(frames[num])
-    return patch,
 
-
-def render_policy_net(model, n_max_steps=200, seed=42):
-    frames = []
-    env = gym.make("CartPole-v1")
-    env.seed(seed)
-    np.random.seed(seed)
-    obs = env.reset()
-    for step in range(n_max_steps):
-        frames.append(env.render(mode="rgb_array"))
-        left_proba = model.predict(obs.reshape(1, -1))
-        action = int(np.random.rand() > left_proba)
-        obs, reward, done, info = env.step(action)
-        if done:
-            break
-    env.close()
-    return frames
-
-
-def plot_animation(frames, repeat=False, interval=1):
-    fig = plt.figure()
-    patch = plt.imshow(frames[0])
-    plt.axis('off')
-    anim = animation.FuncAnimation(
-        fig, update_scene, fargs=(frames, patch),
-        frames=len(frames), repeat=repeat, interval=interval)
-    plt.close()
-    return anim
-
-
-max_layers = 5
+max_layers = 6
 max_neurons = 1000
-neuron_interval = 100
+neuron_interval = 200
+layer_interval = 2
+
+layers = []
+neurons = []
+
+network_cnt = 0
+for layer in range(layer_interval, max_layers, layer_interval):
+    for neuron in range(neuron_interval, max_neurons, neuron_interval):
+        network_cnt += 1
+print(f"Number of networks to train: {network_cnt}")
 
 
-for
-train_reinforcement_network(2, 30, thresh=0.2)
+for layer in range(layer_interval, max_layers, layer_interval):
+    for neuron in range(neuron_interval, max_neurons, neuron_interval):
+        train_reinforcement_network(layer, neuron, thresh=0.3)
+        layers.append(layer)
+        neurons.append(neurons)
+
+print("\n", training_times, layers, neurons)
+
+# plt.scatter(training_times, layers)
+plt.scatter(training_times, neurons)
+plt.show()
