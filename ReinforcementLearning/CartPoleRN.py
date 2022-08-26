@@ -1,3 +1,5 @@
+import time
+
 import gym
 import numpy as np
 import tensorflow as tf
@@ -19,16 +21,13 @@ np.random.seed(42)
 
 n_inputs = env.observation_space.shape[0]
 
-model = keras.models.Sequential([
-    keras.layers.Dense(5, activation="elu", input_shape=[n_inputs]),
-    keras.layers.Dense(1, activation="sigmoid"),
-])
-
-plot_iters = []
-plot_loss = []
+fig = plt.figure()
+ax = plt.axes(projection='3d')
 
 n_environments = 50
-n_iterations = 10000
+n_iterations = 1000
+
+plt.xlim(0, 10000)
 
 envs = [gym.make("CartPole-v1") for _ in range(n_environments)]
 for index, env in enumerate(envs):
@@ -38,25 +37,40 @@ observations = [env.reset() for env in envs]
 optimizer = keras.optimizers.RMSprop()
 loss_fn = keras.losses.binary_crossentropy
 
-for iteration in range(n_iterations):
-    # if angle < 0, we want proba(left) = 1., or else proba(left) = 0.
-    target_probas = np.array([([1.] if obs[2] < 0 else [0.])
-                              for obs in observations])
-    with tf.GradientTape() as tape:
-        left_probas = model(np.array(observations))
-        loss = tf.reduce_mean(loss_fn(target_probas, left_probas))
-    plot_iters.append(iteration)
-    plot_loss.append(loss.numpy())
-    print("\rIteration: {}, Loss: {:.3f}".format(iteration, loss.numpy()), end="")
-    grads = tape.gradient(loss, model.trainable_variables)
-    optimizer.apply_gradients(zip(grads, model.trainable_variables))
-    actions = (np.random.rand(n_environments, 1) > left_probas.numpy()).astype(np.int32)
-    for env_index, env in enumerate(envs):
-        obs, reward, done, info = env.step(actions[env_index][0])
-        observations[env_index] = obs if not done else env.reset()
+training_times = []
 
-for env in envs:
-    env.close()
+
+def train_reinforcement_network(n_layers, n_neurons, thresh=0.01):
+    network_layers = [keras.layers.Dense(5, activation="elu", input_shape=[n_inputs])]
+    for i in range(n_layers):
+        network_layers.append(keras.layers.Dense(n_neurons, activation="elu"))
+    network_layers.append(keras.layers.Dense(1, activation="sigmoid"))
+    model = keras.models.Sequential(network_layers)
+
+    start_time = time.time()
+    iteration = 0
+    loss = 1
+    while loss > thresh:
+        # if angle < 0, we want proba(left) = 1., or else proba(left) = 0.
+        target_probas = np.array([([1.] if obs[2] < 0 else [0.])
+                                  for obs in observations])
+        with tf.GradientTape() as tape:
+            left_probas = model(np.array(observations))
+            loss = tf.reduce_mean(loss_fn(target_probas, left_probas))
+        print("\rIteration: {}, Loss: {:.3f}".format(iteration, loss.numpy()), end="")
+        grads = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+        actions = (np.random.rand(n_environments, 1) > left_probas.numpy()).astype(np.int32)
+        for env_index, env in enumerate(envs):
+            obs, reward, done, info = env.step(actions[env_index][0])
+            observations[env_index] = obs if not done else env.reset()
+        iteration += 1
+
+    train_time = time.time() - start_time
+    training_times.append(train_time)
+
+    for env in envs:
+        env.close()
 
 
 def update_scene(num, frames, patch):
@@ -92,8 +106,10 @@ def plot_animation(frames, repeat=False, interval=1):
     return anim
 
 
-frames = render_policy_net(model, n_max_steps=1000)
-plot_animation(frames, interval=5)
+max_layers = 5
+max_neurons = 1000
+neuron_interval = 100
 
-plt.plot(plot_iters, plot_loss)
-plt.show()
+
+for
+train_reinforcement_network(2, 30, thresh=0.2)
