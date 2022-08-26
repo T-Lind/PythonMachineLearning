@@ -24,8 +24,11 @@ model = keras.models.Sequential([
     keras.layers.Dense(1, activation="sigmoid"),
 ])
 
+plot_iters = []
+plot_loss = []
+
 n_environments = 50
-n_iterations = 1000
+n_iterations = 10000
 
 envs = [gym.make("CartPole-v1") for _ in range(n_environments)]
 for index, env in enumerate(envs):
@@ -42,6 +45,8 @@ for iteration in range(n_iterations):
     with tf.GradientTape() as tape:
         left_probas = model(np.array(observations))
         loss = tf.reduce_mean(loss_fn(target_probas, left_probas))
+    plot_iters.append(iteration)
+    plot_loss.append(loss.numpy())
     print("\rIteration: {}, Loss: {:.3f}".format(iteration, loss.numpy()), end="")
     grads = tape.gradient(loss, model.trainable_variables)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
@@ -61,7 +66,7 @@ def update_scene(num, frames, patch):
 
 def render_policy_net(model, n_max_steps=200, seed=42):
     frames = []
-    env = gym.make("CartPole-v1", render_mode='human')
+    env = gym.make("CartPole-v1")
     env.seed(seed)
     np.random.seed(seed)
     obs = env.reset()
@@ -90,3 +95,5 @@ def plot_animation(frames, repeat=False, interval=1):
 frames = render_policy_net(model, n_max_steps=1000)
 plot_animation(frames, interval=5)
 
+plt.plot(plot_iters, plot_loss)
+plt.show()
