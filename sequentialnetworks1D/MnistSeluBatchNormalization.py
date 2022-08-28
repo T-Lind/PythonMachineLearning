@@ -1,4 +1,4 @@
-# Load the TensorBoard notebook extension
+# Load the tensorboard notebook extension
 from functools import partial
 
 import tensorflow as tf
