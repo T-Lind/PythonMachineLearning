@@ -7,7 +7,7 @@ from sklearn.base import clone
 """
 Path to datasets
 """
-DATASETS = "C:\\Users\\zenith\\PycharmProjects\\MachineLearning\\MyDatasets\\"
+DATASETS = "C:\\Users\\zenith\\PycharmProjects\\MachineLearning\\mydatasets\\"
 
 def display_scores(scores):
     """
