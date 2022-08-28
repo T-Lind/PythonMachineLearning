@@ -95,12 +95,8 @@ print(f"Number of networks to train: {network_cnt}")
 
 for layer in range(layer_interval, max_layers, layer_interval):
     for neuron in range(neuron_interval, max_neurons, neuron_interval):
-        train_reinforcement_network(layer, neuron, thresh=0.3)
+        train_reinforcement_network(layer, neuron, thresh=0.1)
         layers.append(layer)
         neurons.append(neurons)
 
-print("\n", training_times, layers, neurons)
-
-# plt.scatter(training_times, layers)
-plt.scatter(training_times, neurons)
-plt.show()
+print("\n", training_times)
