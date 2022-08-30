@@ -22,7 +22,6 @@ np.random.seed(42)
 n_inputs = env.observation_space.shape[0]
 
 n_environments = 50
-n_iterations = 1000
 
 
 envs = [gym.make("CartPole-v1") for _ in range(n_environments)]
@@ -39,7 +38,7 @@ training_times = []
 def train_reinforcement_network(n_layers, n_neurons, thresh=0.01):
     network_layers = [keras.layers.Dense(5, activation="elu", input_shape=[n_inputs])]
     for i in range(n_layers):
-        network_layers.append(keras.layers.Dense(n_neurons, activation="selu", kernel_initializer="he_normal"))
+        network_layers.append(keras.layers.Dense(n_neurons, activation="relu", kernel_initializer="he_normal"))
         network_layers.append(keras.layers.BatchNormalization())
     network_layers.append(keras.layers.Dense(1, activation="sigmoid"))
     model = keras.models.Sequential(network_layers)
@@ -76,27 +75,13 @@ def train_reinforcement_network(n_layers, n_neurons, thresh=0.01):
     for env in envs:
         env.close()
 
+    model.save('CartPole')
 
 
-max_layers = 6
-max_neurons = 1000
-neuron_interval = 200
-layer_interval = 2
-
-layers = []
-neurons = []
-
-network_cnt = 0
-for layer in range(layer_interval, max_layers, layer_interval):
-    for neuron in range(neuron_interval, max_neurons, neuron_interval):
-        network_cnt += 1
-print(f"Number of networks to train: {network_cnt}")
+layers = 4
+neurons = 10
 
 
-for layer in range(layer_interval, max_layers, layer_interval):
-    for neuron in range(neuron_interval, max_neurons, neuron_interval):
-        train_reinforcement_network(layer, neuron, thresh=0.1)
-        layers.append(layer)
-        neurons.append(neurons)
+train_reinforcement_network(layers, neurons, thresh=0.003)
 
 print("\n", training_times)
