@@ -57,6 +57,14 @@ class FieldEnvFTC(gym.Env):
         # Get the current scores
         return {"red_score": self._red_score, "blue_score": self._blue_score}
 
+    def _score(self, r, c, team):
+        # Must be in bounds to be able to score on a pole
+        if 0 <= r < 6 and 0 <= c < 6:
+            if team == "red":
+                self._pole_states[r][c].red_scored += 1
+            elif team == "blue":
+                self._pole_states[r][c].blue_scored += 1
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -92,8 +100,8 @@ class FieldEnvFTC(gym.Env):
             direction = self._action_to_direction[action - 4]
             self._agent_blue_location = np.clip(self._agent_blue_location + direction, 0, self.size - 1)
 
-        # If we want red to deposit
-        elif action < 12:
+        # If we want red to deposit NE and agent red is carrying something
+        elif action < 12 and self._agent_red_carrying:
             redef_action = 12 - action
 
             if self._agent_red_location[0] == 0 and self._agent_red_location[1] == 0:
@@ -102,10 +110,22 @@ class FieldEnvFTC(gym.Env):
             elif self._agent_red_location[0] == 5 and self._agent_red_location[1] == 5:
                 self._corner_states[3] = True
 
-            elif redef_action == 0 and self._agent_red_carrying:
+            # Deposit NE
+            elif redef_action == 0:
                 deposit_r = self._agent_red_location[0] - 1
                 deposit_c = self._agent_red_location[1]
+                self._score(deposit_r, deposit_c, "red")
 
-                # Must be in bounds to be able to score on a pole
-                if 0 <= deposit_r < 6 and 0 <= deposit_c < 6:
-                    self._pole_states[deposit_r][deposit_c].red_scored += 1
+
+            # Deposit NW
+            elif redef_action == 1:
+                deposit_r = self._agent_red_location[0] - 1
+                deposit_c = self._agent_red_location[1] - 1
+                self._score(deposit_r, deposit_c, "red")
+
+
+            # Deposit SW
+            elif redef_action == 2:
+                deposit_r = self._agent_red_location[0] - 1
+                deposit_c = self._agent_red_location[1] + 1
+                self._score(deposit_r, deposit_c, "red")
