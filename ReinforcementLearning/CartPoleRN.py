@@ -8,6 +8,7 @@ from tensorflow import keras
 import sys
 import warnings
 
+
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
 
