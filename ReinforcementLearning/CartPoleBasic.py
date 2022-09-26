@@ -8,7 +8,6 @@ env = gym.make('CartPole-v1', render_mode='human')
 
 obs = env.reset()
 
-
 def basic_policy(obs):
     angle = obs[2]
     return 0 if angle < 0 else 1
