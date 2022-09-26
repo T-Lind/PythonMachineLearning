@@ -3,7 +3,7 @@ import gym
 
 import gym
 
-env = gym.make('gym_examples/GridWorld-v0', render_mode='human', size=10)
+env = gym.make('gym_examples/GridWorld-v0', render_mode='human', size=6)
 
 
 def basic_policy(obs):
