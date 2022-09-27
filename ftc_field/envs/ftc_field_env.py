@@ -6,7 +6,7 @@ import numpy as np
 
 class PoleState:
     def __init__(self):
-        self.capped = False
+        # self.capped = False
         self.pole_owner = None
         self.red_scored = 0
         self.blue_scored = 0
@@ -32,7 +32,7 @@ class FieldEnvFTC(gym.Env):
         )
 
         # right/up/left/down & deposit/cap NE/NW/SW/SE for red/blue agent
-        # 0-7 is move for red/blue, 8-23 us deposit/cap for red/blue, 24-25 is intake red/blue, 26-29 is for the corners (NE/NW/SW/SE)
+        # 0-7 is move for red/blue, 8-15 us deposit for red/blue, 16-17 is intake red/blue, 18-21 is for the corners (NE/NW/SW/SE)
 
         self.action_space = spaces.Discrete(30)
 
@@ -90,6 +90,8 @@ class FieldEnvFTC(gym.Env):
         return observation, info
 
     def step(self, action):
+        # MOVE
+
         # If we want to move agent red
         if action < 4:
             direction = self._action_to_direction[action]
@@ -100,32 +102,103 @@ class FieldEnvFTC(gym.Env):
             direction = self._action_to_direction[action - 4]
             self._agent_blue_location = np.clip(self._agent_blue_location + direction, 0, self.size - 1)
 
-        # If we want red to deposit NE and agent red is carrying something
+        # DEPOSIT
+
+        # If we want red to deposit and agent red is carrying something
         elif action < 12 and self._agent_red_carrying:
             redef_action = 12 - action
 
-            if self._agent_red_location[0] == 0 and self._agent_red_location[1] == 0:
-                self._corner_states[1] = True
-
-            elif self._agent_red_location[0] == 5 and self._agent_red_location[1] == 5:
-                self._corner_states[3] = True
-
             # Deposit NE
-            elif redef_action == 0:
+            if redef_action == 0:
                 deposit_r = self._agent_red_location[0] - 1
                 deposit_c = self._agent_red_location[1]
                 self._score(deposit_r, deposit_c, "red")
-
+                self._agent_red_carrying = False
 
             # Deposit NW
             elif redef_action == 1:
                 deposit_r = self._agent_red_location[0] - 1
                 deposit_c = self._agent_red_location[1] - 1
                 self._score(deposit_r, deposit_c, "red")
-
+                self._agent_red_carrying = False
 
             # Deposit SW
             elif redef_action == 2:
-                deposit_r = self._agent_red_location[0] - 1
-                deposit_c = self._agent_red_location[1] + 1
+                deposit_r = self._agent_red_location[0]
+                deposit_c = self._agent_red_location[1] - 1
                 self._score(deposit_r, deposit_c, "red")
+                self._agent_red_carrying = False
+
+            # Deposit SE
+            elif redef_action == 3:
+                self._score(*self._agent_red_location, "red")
+                self._agent_red_carrying = False
+
+        # If we want blue to deposit and agent blue is carrying something
+        elif action < 16 and self._agent_blue_carrying:
+            redef_action = 16 - action
+
+            # Deposit NE
+            if redef_action == 0:
+                deposit_r = self._agent_blue_location[0] - 1
+                deposit_c = self._agent_blue_location[1]
+                self._score(deposit_r, deposit_c, "red")
+                self._agent_blue_carrying = False
+
+            # Deposit NW
+            elif redef_action == 1:
+                deposit_r = self._agent_blue_location[0] - 1
+                deposit_c = self._agent_blue_location[1] - 1
+                self._score(deposit_r, deposit_c, "red")
+                self._agent_blue_carrying = False
+
+            # Deposit SW
+            elif redef_action == 2:
+                deposit_r = self._agent_blue_location[0]
+                deposit_c = self._agent_blue_location[1] - 1
+                self._score(deposit_r, deposit_c, "red")
+                self._agent_blue_carrying = False
+
+            # Deposit SE
+            elif redef_action == 3:
+                self._score(*self._agent_blue_location, "red")
+                self._agent_blue_carrying = False
+
+        # INTAKE
+
+        # Agent red intake - can only if on the correct position
+        elif action == 16:
+            if np.array_equal(self._agent_red_location, [2, 5]) or np.array_equal(self._agent_red_location, [3, 5]):
+                self._agent_red_carrying = True
+
+        # Agent blue intake - can only if on the correct position
+        elif action == 17:
+            if np.array_equal(self._agent_blue_location, [2, 0]) or np.array_equal(self._agent_blue_location, [3, 0]):
+                self._agent_blue_carrying = True
+
+        # CORNER DEPOSIT
+
+        # Agent blue deposit on NE corner
+        elif action == 18:
+            if np.array_equal(self._agent_blue_location, [0, 5]) and self._agent_blue_carrying:
+                self._corner_states[0] = True
+                self._agent_blue_carrying = False
+
+        # Agent red deposit on NW corner
+        elif action == 19:
+            if np.array_equal(self._agent_red_location, [0, 0]) and self._agent_red_carrying:
+                self._corner_states[1] = True
+                self._agent_red_carrying = False
+
+        # Agent blue deposit on SW corner
+        elif action == 20:
+            if np.array_equal(self._agent_blue_location, [5, 0]) and self._agent_blue_carrying:
+                self._corner_states[2] = True
+                self._agent_blue_carrying = False
+
+        # Agent red deposit on SE corner
+        elif action == 21:
+            if np.array_equal(self._agent_red_location, [5, 5]) and self._agent_red_carrying:
+                self._corner_states[3] = True
+                self._agent_red_carrying = False
+
