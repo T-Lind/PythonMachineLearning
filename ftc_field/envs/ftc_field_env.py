@@ -38,10 +38,10 @@ class FieldEnvFTC(gym.Env):
         self.action_space = spaces.Discrete(30)
 
         self._action_to_direction = {
-            0: np.array([1, 0]),
-            1: np.array([0, 1]),
-            2: np.array([-1, 0]),
-            3: np.array([0, -1]),
+            0: np.array([0, 1]),
+            1: np.array([-1, 0]),
+            2: np.array([0, -1]),
+            3: np.array([1, 0]),
         }
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -52,11 +52,14 @@ class FieldEnvFTC(gym.Env):
 
     def _get_obs(self):
         return {"agent_red": self._agent_red_location, "agent_blue": self._agent_blue_location,
-                "pole_states": self._pole_states, "corner_states": self._corner_states, "end_game": self._end_game}
+                "pole_states": self._pole_states, "corner_states": self._corner_states, "end_game": self._end_game,
+                "carrying": (self._agent_red_carrying, self._agent_blue_carrying)
+                }
 
     def _get_info(self):
         # Get the current scores
-        return {"red_score": self._red_score, "blue_score": self._blue_score}
+        red_score, blue_score = self._calculate_score()
+        return {"red_score": red_score, "blue_score": blue_score}
 
     def _score(self, r, c, team):
         # Must be in bounds to be able to score on a pole
@@ -156,8 +159,8 @@ class FieldEnvFTC(gym.Env):
 
         self._corner_states = [False] * 4
 
-        self._agent_red_location = np.array(0, 1)
-        self._agent_blue_location = np.array(5, 1)
+        self._agent_red_location = np.array([0, 0])
+        self._agent_blue_location = np.array([5, 5])
 
         observation = self._get_obs()
         info = self._get_info()
@@ -184,7 +187,7 @@ class FieldEnvFTC(gym.Env):
 
         # If we want red to deposit and agent red is carrying something
         elif action < 12 and self._agent_red_carrying:
-            redef_action = 12 - action
+            redef_action = (action - 12) + 4
 
             # Deposit NE
             if redef_action == 0:
@@ -214,7 +217,7 @@ class FieldEnvFTC(gym.Env):
 
         # If we want blue to deposit and agent blue is carrying something
         elif action < 16 and self._agent_blue_carrying:
-            redef_action = 16 - action
+            redef_action = (action - 16) + 4
 
             # Deposit NE
             if redef_action == 0:
@@ -320,7 +323,7 @@ class FieldEnvFTC(gym.Env):
             canvas,
             (255, 0, 0),
             pygame.Rect(
-                pix_square_size * self._agent_red_location,
+                pix_square_size * np.flip(self._agent_red_location),
                 (pix_square_size, pix_square_size),
             ),
         )
@@ -330,7 +333,7 @@ class FieldEnvFTC(gym.Env):
             canvas,
             (0, 0, 255),
             pygame.Rect(
-                pix_square_size * self._agent_red_location,
+                pix_square_size * np.flip(self._agent_blue_location),
                 (pix_square_size, pix_square_size),
             ),
         )

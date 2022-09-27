@@ -1,5 +1,4 @@
 import gym_examples
-import gym
 
 import gym
 
