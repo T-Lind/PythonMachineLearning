@@ -10,6 +10,7 @@ class PoleState:
         self.pole_owner = None
         self.red_scored = 0
         self.blue_scored = 0
+        self.pole_type = None
 
 
 # Only two teams for now
@@ -59,11 +60,87 @@ class FieldEnvFTC(gym.Env):
 
     def _score(self, r, c, team):
         # Must be in bounds to be able to score on a pole
+        self._pole_states[r][c].pole_owner = team
         if 0 <= r < 6 and 0 <= c < 6:
             if team == "red":
                 self._pole_states[r][c].red_scored += 1
             elif team == "blue":
                 self._pole_states[r][c].blue_scored += 1
+
+    def _calculate_score(self):
+        red_score = 0
+        blue_score = 0
+
+        # Count terminal points
+        if self._corner_states[1]:
+            red_score += 1
+        if self._corner_states[3]:
+            red_score += 1
+
+        # Count terminal points
+        if self._corner_states[0]:
+            blue_score += 1
+        if self._corner_states[2]:
+            blue_score += 1
+
+        # Count pole points
+        for pole_row in self._pole_states:
+            for pole in pole_row:
+                # Sum points scored by each alliance on the pole
+                if pole.pole_type == "ground":
+                    red_score += pole.red_scored * 2
+                    blue_score += pole.blue_scored * 2
+
+                elif pole.pole_type == "low":
+                    red_score += pole.red_scored * 3
+                    blue_score += pole.blue_scored * 3
+
+                elif pole.pole_type == "mid":
+                    red_score += pole.red_scored * 4
+                    blue_score += pole.blue_scored * 4
+
+                elif pole.pole_type == "high":
+                    red_score += pole.red_scored * 5
+                    blue_score += pole.blue_scored * 5
+
+                # Calculate owning bonuses
+                if pole.pole_owner == "red":
+                    red_score += 3
+                elif pole.pole_owner == "blue":
+                    blue_score += 3
+
+        return red_score, blue_score
+
+    def _set_pole_states(self):
+        self._pole_states[0][0].pole_type = "ground"
+        self._pole_states[0][2].pole_type = "ground"
+        self._pole_states[0][4].pole_type = "ground"
+        self._pole_states[2][0].pole_type = "ground"
+        self._pole_states[2][2].pole_type = "ground"
+        self._pole_states[2][4].pole_type = "ground"
+        self._pole_states[4][0].pole_type = "ground"
+        self._pole_states[4][2].pole_type = "ground"
+        self._pole_states[4][4].pole_type = "ground"
+
+        self._pole_states[0][1].pole_type = "low"
+        self._pole_states[0][3].pole_type = "low"
+        self._pole_states[1][0].pole_type = "low"
+        self._pole_states[1][4].pole_type = "low"
+        self._pole_states[3][0].pole_type = "low"
+        self._pole_states[3][4].pole_type = "low"
+        self._pole_states[4][1].pole_type = "low"
+        self._pole_states[4][3].pole_type = "low"
+
+        self._pole_states[1][1].pole_type = "mid"
+        self._pole_states[1][3].pole_type = "mid"
+        self._pole_states[3][1].pole_type = "mid"
+        self._pole_states[3][3].pole_type = "mid"
+
+        self._pole_states[1][2].pole_type = "high"
+        self._pole_states[2][1].pole_type = "high"
+        self._pole_states[2][3].pole_type = "high"
+        self._pole_states[3][2].pole_type = "high"
+
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -76,6 +153,9 @@ class FieldEnvFTC(gym.Env):
         self._agent_blue_carrying = False
 
         self._pole_states = [[PoleState()] * 5] * 5
+        self._set_pole_states()
+
+
         self._corner_states = [False] * 4
 
         self._agent_red_location = np.array(0, 1)
@@ -142,26 +222,26 @@ class FieldEnvFTC(gym.Env):
             if redef_action == 0:
                 deposit_r = self._agent_blue_location[0] - 1
                 deposit_c = self._agent_blue_location[1]
-                self._score(deposit_r, deposit_c, "red")
+                self._score(deposit_r, deposit_c, "blue")
                 self._agent_blue_carrying = False
 
             # Deposit NW
             elif redef_action == 1:
                 deposit_r = self._agent_blue_location[0] - 1
                 deposit_c = self._agent_blue_location[1] - 1
-                self._score(deposit_r, deposit_c, "red")
+                self._score(deposit_r, deposit_c, "blue")
                 self._agent_blue_carrying = False
 
             # Deposit SW
             elif redef_action == 2:
                 deposit_r = self._agent_blue_location[0]
                 deposit_c = self._agent_blue_location[1] - 1
-                self._score(deposit_r, deposit_c, "red")
+                self._score(deposit_r, deposit_c, "blue")
                 self._agent_blue_carrying = False
 
             # Deposit SE
             elif redef_action == 3:
-                self._score(*self._agent_blue_location, "red")
+                self._score(*self._agent_blue_location, "blue")
                 self._agent_blue_carrying = False
 
         # INTAKE
@@ -202,3 +282,27 @@ class FieldEnvFTC(gym.Env):
                 self._corner_states[3] = True
                 self._agent_red_carrying = False
 
+        # Take care of returns
+
+        # Terminate based on time into match
+        terminated = self._step_count > 90
+
+        # Set the reward to purely the reward
+        # TODO: Validate if this reward function is good
+        reward_red, reward_blue = self._calculate_score()
+        observation = self._get_obs()
+        info = self._get_info()
+
+        if self.render_mode == "human":
+            self._render_frame()
+
+        # Important: returns the rewards as a tuple with red reward first
+        return observation, (reward_red, reward_blue), terminated, info
+
+
+
+        self._step_count += 1
+
+    def render(self):
+        if self.render_mode == "rgb_array":
+            return self._render_frame()
