@@ -1,5 +1,5 @@
 class Branch:
-    def __init__(self, max_kill_iters, threshold_func=lambda P: 0, generation=0, model=None, performance=0):
+    def __init__(self, max_kill_iters, threshold_func=lambda P: 0, generation=1, model=None, performance=0):
         self.generation = generation
 
         self.model = model
@@ -27,16 +27,19 @@ class Branch:
             self.child_branches.append(Branch(self.max_kill_iters,
                                               generation=self.generation + 1,
                                               threshold_func=self.threshold_func,
-                                              model=self.model,
-                                              performance=self.performance
+                                              model=model,
+                                              performance=performance
                                               ))
             self.reset_iters = 0
-        else:
-            self.prev_model = model
-            self.prev_performance = self.performance
 
-            self.model = model
-            self.performance = performance
+
+        # else:
+        #     self.prev_model = model
+        #     self.prev_performance = self.performance
+        #
+        #     self.model = model
+        #     self.performance = performance
+
 
         self.reset_iters += 1
 
@@ -44,9 +47,9 @@ class Branch:
         ret_str = f"Generation {self.generation}, Performance: {self.performance}, " \
                   f"Iterations since reset: {self.reset_iters}\n"
         for branch in self.child_branches:
-            for i in range(self.generation + 1):
+            for i in range(self.generation):
                 ret_str += "    "
-            ret_str += branch.__str__()
+            ret_str += "↳"+branch.__str__()
 
         return ret_str
 
