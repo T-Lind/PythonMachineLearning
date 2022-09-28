@@ -12,6 +12,18 @@ class PoleState:
         self.blue_scored = 0
         self.pole_type = None
 
+    def obs(self):
+        states = []
+        if self.pole_owner == "red":
+            states.append(1)
+        elif self.pole_owner == "blue":
+            states.append(0)
+
+        states.append(self.red_scored)
+        states.append(self.blue_scored)
+
+        return states
+
 
 # Only two teams for now
 class FieldEnvFTC(gym.Env):
@@ -51,10 +63,19 @@ class FieldEnvFTC(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        return {"agent_red": self._agent_red_location, "agent_blue": self._agent_blue_location,
-                "pole_states": self._pole_states, "corner_states": self._corner_states, "end_game": self._end_game,
-                "carrying": (self._agent_red_carrying, self._agent_blue_carrying)
-                }
+        states = np.array([])
+        for pole_row in self._pole_states:
+            states += np.array([pole.obs() for pole in pole_row])
+        num = 1
+        for dim in states.shape:
+            num *= dim
+        states = states.reshape(1, num)
+
+        return self._agent_red_location+self._agent_blue_location+states+np.array(self._corner_states)+np.array([int(self._agent_red_carrying)])+np.array([int(self._agent_blue_carrying)])
+        # return {"agent_red": self._agent_red_location, "agent_blue": self._agent_blue_location,
+        #         "pole_states": self._pole_states, "corner_states": self._corner_states, "end_game": self._end_game,
+        #         "carrying": (self._agent_red_carrying, self._agent_blue_carrying)
+        #         }
 
     def _get_info(self):
         # Get the current scores
