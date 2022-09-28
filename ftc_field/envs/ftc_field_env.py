@@ -2,8 +2,10 @@ import gym
 from gym import spaces
 import pygame
 import numpy as np
+import logging
 
-
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    datefmt='%m/%d%Y %H: %M: %S')
 class PoleState:
     def __init__(self):
         # self.capped = False
@@ -38,12 +40,11 @@ class FieldEnvFTC(gym.Env):
             {
                 "agent_red": spaces.Box(0, self.size - 1, shape=(2,), dtype=int),
                 "agent_blue": spaces.Box(0, self.size - 1, shape=(2,), dtype=int),
-                "pole_states": spaces.Box(0, self.size - 1, shape=(5, 5), dtype=PoleState),
+                "pole_states": spaces.Box(0, self.size - 1, shape=(5, 5), dtype=tuple),
                 "corner_states": spaces.Box(0, self.size - 1, shape=(4,), dtype=bool),
-                "end_game": spaces.Box(0, 1, shape=(1,), dtype=bool)
-            }
-        )
-
+                "end_game": spaces.Box(0, 1, shape=(1,), dtype=bool),
+                "carrying": spaces.Box(0, 1, shape=(2,), dtype=bool)
+            })
         # right/up/left/down & deposit/cap NE/NW/SW/SE for red/blue agent
         # 0-7 is move for red/blue, 8-15 us deposit for red/blue, 16-17 is intake red/blue, 18-21 is for the corners (NE/NW/SW/SE)
 
@@ -63,19 +64,28 @@ class FieldEnvFTC(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        states = np.array([])
-        for pole_row in self._pole_states:
-            states += np.array([pole.obs() for pole in pole_row])
-        num = 1
-        for dim in states.shape:
-            num *= dim
-        states = states.reshape(1, num)
+        # Convert 2d array of pole states to 2d array of tuples of each pole state's information
+        pole_state_tuple = []
+        for row in self._pole_states:
+            for pole in row:
+                # Convert string of pole type information to a
+                pole_type_int = 0
+                if pole.pole_type == "ground": pole_type_int = 1
+                elif pole.pole_type == "low": pole_type_int = 2
+                elif pole.pole_type == "mid": pole_type_int = 3
+                elif pole.pole_type == "high": pole_type_int = 4
 
-        return self._agent_red_location+self._agent_blue_location+states+np.array(self._corner_states)+np.array([int(self._agent_red_carrying)])+np.array([int(self._agent_blue_carrying)])
-        # return {"agent_red": self._agent_red_location, "agent_blue": self._agent_blue_location,
-        #         "pole_states": self._pole_states, "corner_states": self._corner_states, "end_game": self._end_game,
-        #         "carrying": (self._agent_red_carrying, self._agent_blue_carrying)
-        #         }
+                pole_owner_int = 0
+                if pole.pole_owner == "red": pole_owner_int = 1
+                if pole.pole_owner == "blue": pole_owner_int = 2
+
+                pole_state_tuple += [pole_type_int, pole_owner_int, pole.red_scored, pole.blue_scored]
+
+
+        return {"agent_red": self._agent_red_location, "agent_blue": self._agent_blue_location,
+                "pole_states": pole_state_tuple, "corner_states": self._corner_states, "end_game": self._end_game,
+                "carrying": (self.agent_red_carrying, self._agent_blue_carrying)
+                }
 
     def _get_info(self):
         # Get the current scores
@@ -88,8 +98,10 @@ class FieldEnvFTC(gym.Env):
         if 0 <= r < 6 and 0 <= c < 6:
             if team == "red":
                 self._pole_states[r][c].red_scored += 1
+                self.agent_red_carrying = False
             elif team == "blue":
                 self._pole_states[r][c].blue_scored += 1
+                self._agent_blue_carrying = False
 
     def _calculate_score(self):
         red_score = 0
@@ -135,6 +147,15 @@ class FieldEnvFTC(gym.Env):
 
         return red_score, blue_score
 
+    def pole_states(self):
+        ret_str = ""
+        for row in self._pole_states:
+            for pole in row:
+                ret_str += f"{pole.pole_type} type pole with red scored: {pole.red_scored}" \
+                           f" and blue scored: {pole.blue_scored}, owner is {pole.pole_owner}\n"
+            ret_str += "\n"
+        return ret_str
+
     def _set_pole_states(self):
         self._pole_states[0][0].pole_type = "ground"
         self._pole_states[0][2].pole_type = "ground"
@@ -172,10 +193,11 @@ class FieldEnvFTC(gym.Env):
         self._step_count = 0
         self._end_game = False
 
-        self._agent_red_carrying = False
+        self.agent_red_carrying = False
         self._agent_blue_carrying = False
 
-        self._pole_states = [[PoleState()] * 5] * 5
+        self._pole_states = [[PoleState() for _ in range(5)] for _ in range(5)]
+
         self._set_pole_states()
 
         self._corner_states = [False] * 4
@@ -189,7 +211,7 @@ class FieldEnvFTC(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, info
+        return observation#, info
 
     def step(self, action):
         # MOVE
@@ -207,7 +229,7 @@ class FieldEnvFTC(gym.Env):
         # DEPOSIT
 
         # If we want red to deposit and agent red is carrying something
-        elif action < 12 and self._agent_red_carrying:
+        elif action < 12 and self.agent_red_carrying:
             redef_action = (action - 12) + 4
 
             # Deposit NE
@@ -215,26 +237,22 @@ class FieldEnvFTC(gym.Env):
                 deposit_r = self._agent_red_location[0] - 1
                 deposit_c = self._agent_red_location[1]
                 self._score(deposit_r, deposit_c, "red")
-                self._agent_red_carrying = False
 
             # Deposit NW
             elif redef_action == 1:
                 deposit_r = self._agent_red_location[0] - 1
                 deposit_c = self._agent_red_location[1] - 1
                 self._score(deposit_r, deposit_c, "red")
-                self._agent_red_carrying = False
 
             # Deposit SW
             elif redef_action == 2:
                 deposit_r = self._agent_red_location[0]
                 deposit_c = self._agent_red_location[1] - 1
                 self._score(deposit_r, deposit_c, "red")
-                self._agent_red_carrying = False
 
             # Deposit SE
             elif redef_action == 3:
                 self._score(*self._agent_red_location, "red")
-                self._agent_red_carrying = False
 
         # If we want blue to deposit and agent blue is carrying something
         elif action < 16 and self._agent_blue_carrying:
@@ -245,33 +263,29 @@ class FieldEnvFTC(gym.Env):
                 deposit_r = self._agent_blue_location[0] - 1
                 deposit_c = self._agent_blue_location[1]
                 self._score(deposit_r, deposit_c, "blue")
-                self._agent_blue_carrying = False
 
             # Deposit NW
             elif redef_action == 1:
                 deposit_r = self._agent_blue_location[0] - 1
                 deposit_c = self._agent_blue_location[1] - 1
                 self._score(deposit_r, deposit_c, "blue")
-                self._agent_blue_carrying = False
 
             # Deposit SW
             elif redef_action == 2:
                 deposit_r = self._agent_blue_location[0]
                 deposit_c = self._agent_blue_location[1] - 1
                 self._score(deposit_r, deposit_c, "blue")
-                self._agent_blue_carrying = False
 
             # Deposit SE
             elif redef_action == 3:
                 self._score(*self._agent_blue_location, "blue")
-                self._agent_blue_carrying = False
 
         # INTAKE
 
         # Agent red intake - can only if on the correct position
         elif action == 16:
             if np.array_equal(self._agent_red_location, [2, 5]) or np.array_equal(self._agent_red_location, [3, 5]):
-                self._agent_red_carrying = True
+                self.agent_red_carrying = True
 
         # Agent blue intake - can only if on the correct position
         elif action == 17:
@@ -288,9 +302,9 @@ class FieldEnvFTC(gym.Env):
 
         # Agent red deposit on NW corner
         elif action == 19:
-            if np.array_equal(self._agent_red_location, [0, 0]) and self._agent_red_carrying:
+            if np.array_equal(self._agent_red_location, [0, 0]) and self.agent_red_carrying:
                 self._corner_states[1] = True
-                self._agent_red_carrying = False
+                self.agent_red_carrying = False
 
         # Agent blue deposit on SW corner
         elif action == 20:
@@ -300,9 +314,9 @@ class FieldEnvFTC(gym.Env):
 
         # Agent red deposit on SE corner
         elif action == 21:
-            if np.array_equal(self._agent_red_location, [5, 5]) and self._agent_red_carrying:
+            if np.array_equal(self._agent_red_location, [5, 5]) and self.agent_red_carrying:
                 self._corner_states[3] = True
-                self._agent_red_carrying = False
+                self.agent_red_carrying = False
 
         # Take care of returns
 
