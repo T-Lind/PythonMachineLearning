@@ -41,7 +41,7 @@ def train_reinforcement_network(n_layers, n_neurons, thresh=0.01):
     for i in range(n_layers):
         network_layers.append(keras.layers.Dense(n_neurons, activation="relu", kernel_initializer="he_normal"))
         network_layers.append(keras.layers.BatchNormalization())
-    network_layers.append(keras.layers.Dense(1, activation="sigmoid"))
+    network_layers.append(keras.layers.Dense(1, activation="softmax"))
     model = keras.models.Sequential(network_layers)
 
     start_time = time.time()
