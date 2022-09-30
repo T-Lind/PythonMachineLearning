@@ -15,17 +15,19 @@ n_layers = 6
 n_neurons = 128
 n_inputs = 111
 
-model = keras.Sequential(
-    [
-        keras.layers.Dense(111, activation="relu", name="layer1"),
-        keras.layers.Dense(100, activation="relu", name="layer2"),
-        keras.layers.Dense(22, name="layer3"),
-    ]
-)
-optimizer = keras.optimizers.RMSprop()
-loss_fn = keras.losses.binary_crossentropy
+inputs = keras.Input(shape=(111, 1))
+dense1 = keras.layers.Dense(256, activation="relu")(inputs)
+dense2 = keras.layers.Dense(256, activation="relu")(dense1)
+dense3 = keras.layers.Dense(512, activation="relu")(dense2)
+dense4 = keras.layers.Dense(256, activation="relu")(dense3)
+output = keras.layers.Dense(22, activation="softmax")(dense4)
+model = keras.Model(inputs=inputs, outputs=output, name="FTCModel")
 
-model.compile(optimizer, loss_fn)
+print(model.summary())
+
+model.compile(loss=tf.keras.losses.BinaryCrossentropy(),
+                optimizer=tf.keras.optimizers.Nadam(), # use Adam instead of SGD
+                metrics=['accuracy'])
 
 terminated = False
 
@@ -35,7 +37,16 @@ while not terminated:
     action_possibilities = np.array([])
     for single_observation in obs.values():
         action_possibilities = np.concatenate((np.array(single_observation).flatten(), action_possibilities))
-    action = model(single_feature_normalizer.adapt(action_possibilities))
-    obs, reward, terminated, info = env.step(i for i in range(len(action)) if i == 1)
+    sparse_action_matrix = model(tf.expand_dims(action_possibilities, axis=0))
+    # action = 0
+    # greatest_prob = 0
+    # print(sparse_action_matrix[0][110])
+    # for i in range(22):
+    #     if sparse_action_matrix[0][110][i] > greatest_prob:
+    #         greatest_prob = sparse_action_matrix[0][110][i]
+    #         action = i
+
+    # print(action)
+    obs, reward, terminated, info = env.step(env.action_space)
 
 env.close()
