@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.keras.models import clone_model
 from repnet.RepNet import RepNet
-from repnet.RepTree import repnet, MinBranch
+from repnet.RepTree import repnet, MinBranch, Tree
 
 # Test REPNET on MNIST
 
@@ -28,17 +28,13 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 
 
-main = MinBranch(5, lambda x: 0.05, weights=model.get_weights())
+# main = MinBranch(5, lambda x: 0.05, weights=model.get_weights())
+main = Tree(5, lambda x: 0.05, model, train_images, train_labels, test_images, test_labels)
 
 accuracy = 0
-past_acc = 0
 
 while accuracy < MIN_SUITABLE_ACC:
-    past_accuracy = model.evaluate(test_images, test_labels, verbose=2)[1]
-    past_weights = model.get_weights()
-
-    model.fit(train_images, train_labels, epochs=1)
-    accuracy = model.evaluate(test_images, test_labels, verbose=2)[1]
+    accuracy = main.update_branch_ends()
 
 
 

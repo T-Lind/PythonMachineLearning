@@ -158,16 +158,30 @@ class MinBranch:
         return ret_str
 
 class Tree:
-    def __init__(self, max_kill_iters, threshold_func):
+    def __init__(self, max_kill_iters, threshold_func, model_baseline, train_x, train_Y, test_x, test_Y):
         self.main = MinBranch(max_kill_iters, threshold_func)
+        self.model_baseline = model_baseline
+        self.train_x = train_x
+        self.train_Y = train_Y
+        self.test_x = test_x
+        self.test_Y = test_Y
 
     def get_num_branch_ends(self):
         return self.main.get_branch_num_ends()
-    def update_branch_end(self):
+    def update_branch_ends(self):
+        best_acc = 0
+
         ends = self.main.get_branch_ends()
         for end in ends:
+            self.model_baseline.set_weights(end.weights)
+            self.model_baseline.fit(self.train_x, self.train_Y)
 
+            accuracy = self.model_baseline.evaluate(self.test_x, self.test_Y, verbose=2)[1]
+            if accuracy > best_acc:
+                best_acc = accuracy
+            end.update(accuracy, self.model_baseline.get_weights())
 
+        return best_acc
 
 
 def repnet_rl(max_kill_iters, env_name, threshold_func):
