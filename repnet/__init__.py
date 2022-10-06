@@ -1,1 +1,2 @@
-from repnet.RepTree import Branch, repnet
+from repnet.RepTree import Branch
+from repnet.RepNet import RepNet
