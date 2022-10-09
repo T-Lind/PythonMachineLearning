@@ -213,8 +213,16 @@ class FieldEnvFTC(gym.Env):
 
         return observation#, info
 
-    def step(self, action):
+    def step(self, action_space):
         # MOVE
+
+        action = 0
+        maximum = max(action_space)
+        for i in range(len(action_space)):
+            if action_space[i] == maximum:
+                action = i
+
+        print(action)
 
         # If we want to move agent red
         if action < 4:
@@ -321,7 +329,7 @@ class FieldEnvFTC(gym.Env):
         # Take care of returns
 
         # Terminate based on time into match
-        terminated = self._step_count > 90
+        terminated = self._step_count > 90 and False
 
         # Set the reward to purely the reward
         # TODO: Validate if this reward function is good

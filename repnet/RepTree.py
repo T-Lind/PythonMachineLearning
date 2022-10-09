@@ -183,8 +183,8 @@ class Tree:
             ends.update(accuracy, self.model_baseline.get_weights())
             return best_acc
 
-        for i in range(len(ends)-1, -1, -1):
-            end = ends[i]
+        for end in ends:
+            # end = ends[i]
             if end.killed:
                 continue
 

@@ -1,4 +1,5 @@
-import np as np
+import random
+
 import numpy as np
 import tensorflow as tf
 import ftc_field
@@ -26,27 +27,26 @@ model = keras.Model(inputs=inputs, outputs=output, name="FTCModel")
 print(model.summary())
 
 model.compile(loss=tf.keras.losses.BinaryCrossentropy(),
-                optimizer=tf.keras.optimizers.Nadam(), # use Adam instead of SGD
-                metrics=['accuracy'])
+              optimizer=tf.keras.optimizers.Nadam(),
+              metrics=['accuracy'])
 
 terminated = False
 
 single_feature_normalizer = tf.keras.layers.Normalization(axis=None)
 
 while not terminated:
-    action_possibilities = np.array([])
+    action_possibilities = np.array([], dtype=np.int32)
     for single_observation in obs.values():
         action_possibilities = np.concatenate((np.array(single_observation).flatten(), action_possibilities))
+
     sparse_action_matrix = model(tf.expand_dims(action_possibilities, axis=0))
-    # action = 0
-    # greatest_prob = 0
-    # print(sparse_action_matrix[0][110])
+    greatest_prob = 0
+    print(sparse_action_matrix[0][110])
     # for i in range(22):
     #     if sparse_action_matrix[0][110][i] > greatest_prob:
     #         greatest_prob = sparse_action_matrix[0][110][i]
     #         action = i
 
-    # print(action)
-    obs, reward, terminated, info = env.step(env.action_space)
+    obs, reward, terminated, info = env.step(np.array(sparse_action_matrix[0][110], dtype=np.int32))
 
 env.close()
