@@ -16,9 +16,9 @@ fashion_mnist = tf.keras.datasets.fashion_mnist
 # Base model
 model = tf.keras.models.Sequential([
   tf.keras.layers.Flatten(input_shape=(28, 28)),
-  tf.keras.layers.Dense(128, activation='selu'),
+  tf.keras.layers.Dense(128, activation='relu'),
+  tf.keras.layers.Dense(128, activation='relu'),
   tf.keras.layers.Dense(64, activation='selu'),
-  tf.keras.layers.Dropout(0.2),
   tf.keras.layers.Dense(10)
 ])
 
@@ -29,14 +29,11 @@ model.compile(optimizer='adam',
 
 
 # main = MinBranch(5, lambda x: 0.05, weights=model.get_weights())
-main = Tree(5, lambda x: 0.05, model, train_images, train_labels, test_images, test_labels)
+main = Tree(10, lambda x: 0.02, model, train_images, train_labels, test_images, test_labels)
 
 accuracy = 0
 
 while accuracy < MIN_SUITABLE_ACC:
+    print(main)
     accuracy = main.update_branch_ends()
-
-
-
-
-
+    print(accuracy)
