@@ -173,7 +173,6 @@ class Tree:
 
     def update_branch_ends(self):
         best_acc = 0
-r
         ends = self.main.get_branch_ends()
 
         if type(ends) == MinBranch:
