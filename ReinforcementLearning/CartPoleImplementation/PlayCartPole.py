@@ -23,7 +23,7 @@ eps = np.finfo(np.float32).eps.item()
 
 
 class ActorCritic(tf.keras.Model):
-    """Combined actor-critic network."""
+    """Combined actor_critic network."""
 
     def __init__(
             self,
@@ -163,7 +163,7 @@ def compute_loss(
         action_probs: tf.Tensor,
         values: tf.Tensor,
         returns: tf.Tensor) -> tf.Tensor:
-    """Computes the combined actor-critic loss."""
+    """Computes the combined actor_critic loss."""
 
     advantage = returns - values
 

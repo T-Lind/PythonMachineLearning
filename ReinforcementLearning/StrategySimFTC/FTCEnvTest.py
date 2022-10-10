@@ -16,7 +16,7 @@ n_layers = 6
 n_neurons = 128
 n_inputs = 111
 
-inputs = keras.Input(shape=(111, 1))
+inputs = keras.Input(shape=(111,))
 dense1 = keras.layers.Dense(256, activation="relu")(inputs)
 dense2 = keras.layers.Dense(256, activation="relu")(dense1)
 dense3 = keras.layers.Dense(512, activation="relu")(dense2)
@@ -35,11 +35,11 @@ terminated = False
 single_feature_normalizer = tf.keras.layers.Normalization(axis=None)
 
 while not terminated:
-    action_possibilities = np.array([], dtype=np.int32)
+    action_possibilities = np.array([], dtype=np.float64)
     for single_observation in obs.values():
         action_possibilities = np.concatenate((np.array(single_observation).flatten(), action_possibilities))
 
-    sparse_action_matrix = model(tf.expand_dims(action_possibilities, axis=0))
+    sparse_action_matrix = model(tf.convert_to_tensor(action_possibilities, dtype=tf.float64))
     greatest_prob = 0
     print(sparse_action_matrix[0][110])
     # for i in range(22):
@@ -47,6 +47,6 @@ while not terminated:
     #         greatest_prob = sparse_action_matrix[0][110][i]
     #         action = i
 
-    obs, reward, terminated, info = env.step(np.array(sparse_action_matrix[0][110], dtype=np.int32))
+    obs, reward, terminated, info = env.step(np.array(sparse_action_matrix[0][110], dtype=np.int64))
 
 env.close()

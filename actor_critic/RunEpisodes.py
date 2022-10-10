@@ -1,26 +1,18 @@
-import collections
 import gym
 import numpy as np
-import statistics
 import tensorflow as tf
-import tqdm
-
-import ftc_field
-from matplotlib import pyplot as plt
-from keras import layers
+from tensorflow.keras import layers
 from typing import Any, List, Sequence, Tuple
 
-# Create the environment
-env = gym.make("ftc_field/ftc_field-v0")
-
-# Set seed for experiment reproducibility
-seed = 42
-env.seed(seed)
-tf.random.set_seed(seed)
-np.random.seed(seed)
-
-# Small epsilon value for stabilizing division operations
+huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
 eps = np.finfo(np.float32).eps.item()
+env = None
+
+
+def create_env():
+    global env
+    env = gym.make("CartPole-v1")
+    return env
 
 
 class ActorCritic(tf.keras.Model):
@@ -42,38 +34,10 @@ class ActorCritic(tf.keras.Model):
         return self.actor(x), self.critic(x)
 
 
-num_actions = env.action_space.n  # 2
-num_hidden_units = 128
-
-model = ActorCritic(num_actions, num_hidden_units)
-
-
-# Wrap OpenAI Gym's `env.step` call as an operation in a TensorFlow function.
-# This would allow it to be included in a callable TensorFlow graph.
-
 def env_step(action: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Returns state, reward and done flag given an action."""
 
     state, reward, done, _ = env.step(action)
-    state = format_obs(state)
-    return (state.astype(np.float32),
-            np.array(reward, np.int32),
-            np.array(done, np.int32))
-
-
-def tf_env_step(action: tf.Tensor) -> List[tf.Tensor]:
-    return tf.numpy_function(env_step, [action],
-                             [tf.float32, tf.int32, tf.int32])
-
-
-# Wrap OpenAI Gym's `env.step` call as an operation in a TensorFlow function.
-# This would allow it to be included in a callable TensorFlow graph.
-
-def env_step(action: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Returns state, reward and done flag given an action."""
-
-    state, reward, done, _ = env.step(action)
-    state = format_obs(state)
     return (state.astype(np.float32),
             np.array(reward, np.int32),
             np.array(done, np.int32))
@@ -159,9 +123,6 @@ def get_expected_return(
     return returns
 
 
-huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
-
-
 def compute_loss(
         action_probs: tf.Tensor,
         values: tf.Tensor,
@@ -176,15 +137,6 @@ def compute_loss(
     critic_loss = huber_loss(values, returns)
 
     return actor_loss + critic_loss
-
-
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-
-def format_obs(obs):
-    action_possibilities = np.array([])
-    for single_observation in obs.values():
-        action_possibilities = np.concatenate((np.array(single_observation).flatten(), action_possibilities))
-    return action_possibilities
 
 
 @tf.function
@@ -220,42 +172,3 @@ def train_step(
     episode_reward = tf.math.reduce_sum(rewards)
 
     return episode_reward
-
-
-min_episodes_criterion = 100
-max_episodes = 10000
-max_steps_per_episode = 1000
-
-# Cartpole-v0 is considered solved if average reward is >= 195 over 100
-# consecutive trials
-reward_threshold = 195
-running_reward = 0
-
-# Discount factor for future rewards
-gamma = 0.99
-
-# Keep last episodes reward
-episodes_reward: collections.deque = collections.deque(maxlen=min_episodes_criterion)
-
-with tqdm.trange(max_episodes) as t:
-    for i in t:
-        obs = env.reset()
-        initial_state = tf.constant(format_obs(obs), dtype=tf.float32)
-        episode_reward = int(train_step(
-            initial_state, model, optimizer, gamma, max_steps_per_episode))
-
-        episodes_reward.append(episode_reward)
-        running_reward = statistics.mean(episodes_reward)
-
-        t.set_description(f'Episode {i}')
-        t.set_postfix(
-            episode_reward=episode_reward, running_reward=running_reward)
-
-        # Show average episode reward every 10 episodes
-        if i % 10 == 0:
-            pass  # print(f'Episode {i}: average reward: {avg_reward}')
-
-        if running_reward > reward_threshold and i >= min_episodes_criterion:
-            break
-
-print(f'\nSolved at episode {i}: average reward: {running_reward:.2f}!')

@@ -171,12 +171,15 @@ class Tree:
     def get_num_branch_ends(self):
         return self.main.get_branch_num_ends()
 
-    def update_branch_ends(self):
+    def update_branch_ends(self, labeled=True, rl_input=None):
         best_acc = 0
         ends = self.main.get_branch_ends()
 
         if type(ends) == MinBranch:
-            self.model_baseline.fit(self.train_x, self.train_Y)
+            if labeled:
+                self.model_baseline.fit(self.train_x, self.train_Y)
+            else:
+                self.model(rl_input)
             accuracy = self.model_baseline.evaluate(self.test_x, self.test_Y, verbose=2)[1]
             if accuracy > best_acc:
                 best_acc = accuracy
