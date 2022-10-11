@@ -54,7 +54,7 @@ def train_repnet():
     model = ActorCritic(num_actions, num_hidden_units)
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-    trunk = TreeRL(100, lambda x: 150, model)
+    trunk = TreeRL(100, lambda x: 50, model)
 
     for end in trunk.get_branch_ends():
         end.weights = model.get_weights()
