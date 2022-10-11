@@ -5,7 +5,7 @@ import statistics
 import tensorflow as tf
 import tqdm
 from actor_critic import train_step, ActorCritic, create_env
-
+import matplotlib.pyplot as plt
 
 # Create the environment
 print(gym)
@@ -41,6 +41,10 @@ num_hidden_units = 128
 model = ActorCritic(num_actions, num_hidden_units)
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
+performance_list = []
+
+iters = 0
+
 with tqdm.trange(max_episodes) as t:
     for i in t:
         initial_state = tf.constant(env.reset(), dtype=tf.float32)
@@ -49,6 +53,10 @@ with tqdm.trange(max_episodes) as t:
 
         episodes_reward.append(episode_reward)
         running_reward = statistics.mean(episodes_reward)
+
+        iters += 1
+
+        performance_list.append(running_reward)
 
         t.set_description(f'Episode {i}')
         t.set_postfix(
@@ -62,3 +70,8 @@ with tqdm.trange(max_episodes) as t:
             break
 
 print(f'\nSolved at episode {i}: average reward: {running_reward:.2f}!')
+print(iters)
+
+plt.title("Normal RL Actor-Critic running reward with each iteration (TLind):")
+plt.plot(performance_list)
+plt.show()

@@ -6,6 +6,8 @@ import tensorflow as tf
 import tqdm
 from actor_critic import train_step, ActorCritic, create_env
 from repnet.RepTree import TreeRL
+import matplotlib.pyplot as plt
+
 
 # Create the environment
 print(gym)
@@ -41,13 +43,16 @@ num_hidden_units = 128
 model = ActorCritic(num_actions, num_hidden_units)
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-trunk = TreeRL(100, lambda x: 100, model)
+trunk = TreeRL(100, lambda x: 50, model)
 
 for end in trunk.get_branch_ends():
     end.weights = model.get_weights()
 
+performance_list = []
+
 iters = 0
-with tqdm.trange(max_episodes) as t:
+# with tqdm.trange(max_episodes) as t:
+if True:
     for i in range(max_episodes):
         # print(trunk.get_branch_ends())
         for end in trunk.get_branch_ends():
@@ -64,8 +69,11 @@ with tqdm.trange(max_episodes) as t:
 
             # print(episode_reward)
 
+
             episodes_reward.append(episode_reward)
             running_reward = statistics.mean(episodes_reward)
+
+            performance_list.append(running_reward)
 
             end.weights = model.get_weights()
 
@@ -84,3 +92,6 @@ with tqdm.trange(max_episodes) as t:
             trunk.update_end(end, episode_reward, model.get_weights())
 
 print(f'\nSolved at {iters} iterations: average reward: {running_reward:.2f}!')
+plt.title("REPNET running reward with each iteration (TLind):")
+plt.plot(performance_list)
+plt.show()
