@@ -626,4 +626,7 @@ def plot_repnet_reg():
 plot_rl_reg()
 plot_repnet_reg()
 plt.legend()
+plt.title("REPNET's Performance on CartPole vs. standard ")
+plt.xlabel("Cumulative weight updates")
+plt.ylabel("Running reward (195 to consider \"solved\")")
 plt.show()
