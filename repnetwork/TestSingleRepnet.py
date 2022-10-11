@@ -43,7 +43,7 @@ num_hidden_units = 128
 model = ActorCritic(num_actions, num_hidden_units)
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-trunk = TreeRL(100, lambda x: 50, model)
+trunk = TreeRL(100, lambda x: 100, model)
 
 for end in trunk.get_branch_ends():
     end.weights = model.get_weights()
@@ -51,47 +51,39 @@ for end in trunk.get_branch_ends():
 performance_list = []
 
 iters = 0
-# with tqdm.trange(max_episodes) as t:
-if True:
-    for i in range(max_episodes):
-        # print(trunk.get_branch_ends())
-        for end in trunk.get_branch_ends():
-            if end.killed:
-                continue
+for i in range(max_episodes):
+    # print(trunk.get_branch_ends())
+    for end in trunk.get_branch_ends():
+        if end.killed:
+            continue
 
-            if end.weights is not None:
-                model.set_weights(end.weights)
-            iters += 1
+        if end.weights is not None:
+            model.set_weights(end.weights)
+        iters += 1
 
-            initial_state = tf.constant(env.reset(), dtype=tf.float32)
-            episode_reward = int(train_step(
-                initial_state, model, optimizer, gamma, max_steps_per_episode))
+        initial_state = tf.constant(env.reset(), dtype=tf.float32)
+        episode_reward = int(train_step(
+            initial_state, model, optimizer, gamma, max_steps_per_episode))
 
-            # print(episode_reward)
+        # print(episode_reward)
 
+        episodes_reward.append(episode_reward)
+        running_reward = statistics.mean(episodes_reward)
 
-            episodes_reward.append(episode_reward)
-            running_reward = statistics.mean(episodes_reward)
+        performance_list.append(running_reward)
 
-            performance_list.append(running_reward)
+        end.weights = model.get_weights()
 
-            end.weights = model.get_weights()
+        # Show average episode reward every 10 episodes
+        if i % 50 == 0:
+            # print(trunk.main)
+            print(f'Running reward: {running_reward}')
 
-            # t.set_description(f'Episode {i}')
-            # t.set_postfix(
-            #     episode_reward=episode_reward, running_reward=running_reward)
+        if running_reward > reward_threshold and i >= min_episodes_criterion:
+            break
 
-            # Show average episode reward every 10 episodes
-            if i % 50 == 0:
-                print(trunk.main)
-                print(f'Episode {i}: reward: {episode_reward}')
+        trunk.update_end(end, episode_reward, model.get_weights())
 
-            if running_reward > reward_threshold and i >= min_episodes_criterion:
-                break
-
-            trunk.update_end(end, episode_reward, model.get_weights())
-
-print(f'\nSolved at {iters} iterations: average reward: {running_reward:.2f}!')
 plt.title("REPNET running reward with each iteration (TLind):")
 plt.plot(performance_list)
 plt.show()

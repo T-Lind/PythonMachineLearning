@@ -12,10 +12,10 @@ print(gym)
 env = create_env()
 
 # Set seed for experiment reproducibility
-seed = 42
-env.seed(seed)
-tf.random.set_seed(seed)
-np.random.seed(seed)
+# seed = 42
+# env.seed(seed)
+# tf.random.set_seed(seed)
+# np.random.seed(seed)
 
 # Small epsilon value for stabilizing division operations
 eps = np.finfo(np.float32).eps.item()
@@ -70,8 +70,7 @@ with tqdm.trange(max_episodes) as t:
             break
 
 print(f'\nSolved at episode {i}: average reward: {running_reward:.2f}!')
-print(iters)
-
+print(performance_list)
 plt.title("Normal RL Actor-Critic running reward with each iteration (TLind):")
 plt.plot(performance_list)
 plt.show()
