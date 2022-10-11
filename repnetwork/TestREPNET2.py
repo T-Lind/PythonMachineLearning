@@ -5,7 +5,7 @@ import statistics
 import tensorflow as tf
 import tqdm
 from actor_critic import train_step, ActorCritic, create_env
-
+from repnet.RepTree import TreeRL
 
 # Create the environment
 print(gym)
@@ -41,24 +41,46 @@ num_hidden_units = 128
 model = ActorCritic(num_actions, num_hidden_units)
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
+trunk = TreeRL(100, lambda x: 100, model)
+
+for end in trunk.get_branch_ends():
+    end.weights = model.get_weights()
+
+iters = 0
 with tqdm.trange(max_episodes) as t:
-    for i in t:
-        initial_state = tf.constant(env.reset(), dtype=tf.float32)
-        episode_reward = int(train_step(
-            initial_state, model, optimizer, gamma, max_steps_per_episode))
+    for i in range(max_episodes):
+        # print(trunk.get_branch_ends())
+        for end in trunk.get_branch_ends():
+            if end.killed:
+                continue
 
-        episodes_reward.append(episode_reward)
-        running_reward = statistics.mean(episodes_reward)
+            if end.weights is not None:
+                model.set_weights(end.weights)
+            iters += 1
 
-        t.set_description(f'Episode {i}')
-        t.set_postfix(
-            episode_reward=episode_reward, running_reward=running_reward)
+            initial_state = tf.constant(env.reset(), dtype=tf.float32)
+            episode_reward = int(train_step(
+                initial_state, model, optimizer, gamma, max_steps_per_episode))
 
-        # Show average episode reward every 10 episodes
-        if i % 10 == 0:
-            pass  # print(f'Episode {i}: average reward: {avg_reward}')
+            # print(episode_reward)
 
-        if running_reward > reward_threshold and i >= min_episodes_criterion:
-            break
+            episodes_reward.append(episode_reward)
+            running_reward = statistics.mean(episodes_reward)
 
-print(f'\nSolved at episode {i}: average reward: {running_reward:.2f}!')
+            end.weights = model.get_weights()
+
+            # t.set_description(f'Episode {i}')
+            # t.set_postfix(
+            #     episode_reward=episode_reward, running_reward=running_reward)
+
+            # Show average episode reward every 10 episodes
+            if i % 50 == 0:
+                print(trunk.main)
+                print(f'Episode {i}: reward: {episode_reward}')
+
+            if running_reward > reward_threshold and i >= min_episodes_criterion:
+                break
+
+            trunk.update_end(end, episode_reward, model.get_weights())
+
+print(f'\nSolved at {iters} iterations: average reward: {running_reward:.2f}!')

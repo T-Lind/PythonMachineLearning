@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.keras.models import clone_model
 from repnet.RepNet import RepNet
-from repnet.RepTree import repnet, MinBranch, Tree
+from repnet.RepTree import repnet, MinBranch, SupervisedTree
 
 # Test REPNET on MNIST
 
@@ -29,7 +29,7 @@ model.compile(optimizer='adam',
 
 
 # main = MinBranch(5, lambda x: 0.05, weights=model.get_weights())
-main = Tree(10, lambda x: 0.02, model, train_images, train_labels, test_images, test_labels)
+main = SupervisedTree(10, lambda x: 0.02, model, train_images, train_labels, test_images, test_labels)
 
 accuracy = 0
 

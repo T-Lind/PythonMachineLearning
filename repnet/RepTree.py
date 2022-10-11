@@ -118,7 +118,7 @@ class MinBranch:
 
     def get_branch_ends(self):
         if len(self.child_branches) == 0:
-            return self
+            return [self]
 
         branch_ends = []
         for child in self.child_branches:
@@ -128,6 +128,7 @@ class MinBranch:
     def update(self, new_performance, new_weights):
         self.check_kill()
         if self.killed:
+            # del self
             return True
 
         if new_performance - self.performance > self.threshold_func(self.performance):
@@ -149,8 +150,10 @@ class MinBranch:
             ret_str += "trunk: "
         else:
             ret_str += "branch: "
-        ret_str += f"Generation {self.generation}," \
-                   f"Performance: {self.performance}, Iterations since reset: {self.reset_iters}\n"
+
+        if not self.killed:
+            ret_str += f"Generation {self.generation}," \
+                       f"Performance: {self.performance}, Iterations since reset: {self.reset_iters}\n"
         for branch in self.child_branches:
             for i in range(self.generation):
                 ret_str += "    "
@@ -159,7 +162,7 @@ class MinBranch:
         return ret_str
 
 
-class Tree:
+class SupervisedTree:
     def __init__(self, max_kill_iters, threshold_func, model_baseline, train_x, train_Y, test_x, test_Y):
         self.main = MinBranch(max_kill_iters, threshold_func)
         self.model_baseline = model_baseline
@@ -171,15 +174,12 @@ class Tree:
     def get_num_branch_ends(self):
         return self.main.get_branch_num_ends()
 
-    def update_branch_ends(self, labeled=True, rl_input=None):
+    def update_branch_ends(self):
         best_acc = 0
         ends = self.main.get_branch_ends()
 
         if type(ends) == MinBranch:
-            if labeled:
-                self.model_baseline.fit(self.train_x, self.train_Y)
-            else:
-                self.model(rl_input)
+            self.model_baseline.fit(self.train_x, self.train_Y)
             accuracy = self.model_baseline.evaluate(self.test_x, self.test_Y, verbose=2)[1]
             if accuracy > best_acc:
                 best_acc = accuracy
@@ -205,6 +205,27 @@ class Tree:
 
     def __str__(self):
         return str(self.main)
+
+
+class TreeRL:
+    def __init__(self, max_kill_iters, threshold_func, model_baseline):
+        self.main = MinBranch(max_kill_iters, threshold_func)
+        self.model_baseline = model_baseline
+
+        self.best_weights = None
+        self.best_performance = 0
+
+    def get_num_branch_ends(self):
+        return self.main.get_branch_num_ends()
+
+    def get_branch_ends(self):
+        return self.main.get_branch_ends()
+
+    def update_end(self, end, performance, weights):
+        if performance > self.best_performance:
+            self.best_weights = weights
+            self.best_performance = performance
+        return end.update(performance, weights)
 
 
 def repnet_rl(max_kill_iters, env_name, threshold_func):
