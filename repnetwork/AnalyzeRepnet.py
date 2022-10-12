@@ -5,11 +5,13 @@ import numpy as np
 import statistics
 import tensorflow as tf
 import tqdm
-from actor_critic import train_step, ActorCritic, create_env
+from actor_critic import ActorCritic, CartPoleEnv
 from repnet.RepTree import TreeRL
 import matplotlib.pyplot as plt
 
 num_networks_trained = 5
+
+reward_threshold = 195
 
 
 def merge_lists(list1, list2):
@@ -22,16 +24,15 @@ def merge_lists(list1, list2):
     return merged_list
 
 
+
+
 def train_repnet():
-    env = create_env()
+    cartpole = CartPoleEnv()
 
     seed = random.randrange(0, 100)
-    env.seed(seed)
+    cartpole.env.seed(seed)
     tf.random.set_seed(seed)
     np.random.seed(seed)
-
-    # Small epsilon value for stabilizing division operations
-    eps = np.finfo(np.float32).eps.item()
 
     min_episodes_criterion = 140
     max_episodes = 10000
@@ -39,7 +40,6 @@ def train_repnet():
 
     # Cartpole-v0 is considered solved if average reward is >= 195 over 100
     # consecutive trials
-    reward_threshold = 195
     running_reward = 0
 
     # Discount factor for future rewards
@@ -48,7 +48,7 @@ def train_repnet():
     # Keep last episodes reward
     episodes_reward: collections.deque = collections.deque(maxlen=min_episodes_criterion)
 
-    num_actions = env.action_space.n  # 2
+    num_actions = cartpole.env.action_space.n  # 2
     num_hidden_units = 128
 
     model = ActorCritic(num_actions, num_hidden_units)
@@ -72,11 +72,9 @@ def train_repnet():
                 model.set_weights(end.weights)
             iters += 1
 
-            initial_state = tf.constant(env.reset(), dtype=tf.float32)
-            episode_reward = int(train_step(
+            initial_state = tf.constant(cartpole.env.reset(), dtype=tf.float32)
+            episode_reward = int(cartpole.train_step(
                 initial_state, model, optimizer, gamma, max_steps_per_episode))
-
-            # print(episode_reward)
 
             episodes_reward.append(episode_reward)
             running_reward = statistics.mean(episodes_reward)
@@ -92,6 +90,13 @@ def train_repnet():
     return performance_list
 
 
+def get_repnet_data():
+    result = train_repnet()
+    if result[-1] < reward_threshold:
+        result = train_repnet()
+
 result = train_repnet()
-print(result)
-print(len(result))
+plt.plot(result)
+result = train_repnet()
+plt.plot(result)
+plt.show()

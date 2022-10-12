@@ -4,14 +4,15 @@ import numpy as np
 import statistics
 import tensorflow as tf
 import tqdm
-from actor_critic import train_step, ActorCritic, create_env
+from actor_critic import ActorCritic, CartPoleEnv
 from repnet.RepTree import TreeRL
 import matplotlib.pyplot as plt
 
 # Create the environment
 print(gym)
-env = create_env()
-
+# env = create_env()
+cartpole = CartPoleEnv()
+env = cartpole.env
 # Set seed for experiment reproducibility
 seed = 42
 env.seed(seed)
