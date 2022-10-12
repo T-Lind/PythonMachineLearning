@@ -42,7 +42,7 @@ def train_repnet():
     model = ActorCritic(num_actions, num_hidden_units)
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-    trunk = TreeRL(100, lambda x: 50, model)
+    trunk = TreeRL(70, lambda x: 20, model)
 
     for end in trunk.get_branch_ends():
         end.weights = model.get_weights()
@@ -75,15 +75,10 @@ def train_repnet():
                 return performance_list
 
             trunk.update_end(end, episode_reward, model.get_weights())
+    if performance_list[-1] < reward_threshold:
+        return train_repnet()
+    print(len(performance_list))
     return performance_list
-
-
-def get_repnet_data():
-    result = train_repnet()
-    if result[-1] < reward_threshold:
-        result = train_repnet()
-    return result
-
 
 def train_rl():
     cartpole = CartPoleEnv()
@@ -138,10 +133,27 @@ def train_rl():
 
             if running_reward > reward_threshold and i >= min_episodes_criterion:
                 break
+    if performance_list[-1] < reward_threshold:
+        return train_repnet()
     return performance_list
 
+repnet_performances = []
+rl_performances = []
 
-for _ in range(50):
-    plt.plot(get_repnet_data(), color="magenta")
-    plt.plot(get_repnet_data(), color="teal")
+for _ in range(num_networks_trained):
+    repnet_perform = train_repnet()
+    rl_perform = train_rl()
+
+    repnet_performances.append(repnet_perform)
+    rl_performances.append(rl_perform)
+
+    plt.plot(repnet_perform, color="magenta", label="REPNET")
+    plt.plot(rl_perform, color="teal", label="Normal RL")
+
+print(f"REPNET average # of weight updates: {np.mean([len(x) for x in repnet_performances])}")
+print(f"RL average # of weight updates: {np.mean([len(x) for x in rl_performances])}")
+
+plt.title("REPNET performance versus normal actor-critic RL on the CartPole env:")
+plt.xlabel("Running reward")
+plt.ylabel("Cumulative training iterations")
 plt.show()
