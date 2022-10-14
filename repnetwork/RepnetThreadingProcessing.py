@@ -9,11 +9,11 @@ from actor_critic import ActorCritic, CartPoleEnv
 from repnet.RepTree import TreeRL
 import matplotlib.pyplot as plt
 
-num_networks_trained = 100
+num_networks_trained = 10
 
 reward_threshold = 195
 
-
+# TODO: Implement multithreading/multiprocessing here
 def train_repnet():
     cartpole = CartPoleEnv()
 
@@ -42,7 +42,7 @@ def train_repnet():
     model = ActorCritic(num_actions, num_hidden_units)
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-    trunk = TreeRL(100, lambda x: 25, model)
+    trunk = TreeRL(100, lambda x: 125, model)
 
     for end in trunk.get_branch_ends():
         end.weights = model.get_weights()
