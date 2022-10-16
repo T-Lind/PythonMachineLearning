@@ -41,7 +41,7 @@ if __name__ == '__main__':
     print(f"Distributed REPNET average # of weight updates: {np.mean(repnet_data)}, standard dev: {np.std(repnet_data)}")
     print(f"RL average # of weight updates {np.mean(rl_data)}, standard dev: {np.std(rl_data)}")
     #
-    # plt.title("REPNET performance versus normal actor-critic RL on the CartPole env:")
+    # plt.title("REPNET and distributed variant versus normal actor-critic RL on the CartPole env:")
     # plt.xlabel("Running reward")
-    # plt.ylabel("Cumulative training iterations")
+    # plt.ylabel("Cumulative training episodes")
     # plt.show()
