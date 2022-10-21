@@ -1,6 +1,5 @@
 import tensorflow as tf
 from tensorflow.python.keras.models import clone_model
-from repnet.RepNet import RepNet
 from repnet.RepTree import repnet, MinBranch, SupervisedTree
 
 # Test REPNET on MNIST

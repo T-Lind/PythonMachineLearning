@@ -21,9 +21,9 @@ for i in range(num_networks_trained):
     rl_perform = train_rl()
 
     # Not recommended to plot a large number of networks at once
-    # plt.plot(repnet_perform, color="magenta")
-    # plt.plot(dist_repnet_perform, color="black", label="Distributed REPNET)
-    # plt.plot(rl_perform, color="teal", label="Normal RL")
+    plt.plot(repnet_perform, color="magenta", label="REPNET")
+    # plt.plot(dist_repnet_perform, color="black", label="Distributed REPNET")
+    plt.plot(rl_perform, color="teal", label="Normal RL")
 
     rl_performances.append(rl_perform)
     repnet_performances.append(repnet_perform)
@@ -40,8 +40,9 @@ if __name__ == '__main__':
     print(f"REPNET average # of weight updates: {np.mean(repnet_data)}, standard dev: {np.std(repnet_data)}")
     print(f"Distributed REPNET average # of weight updates: {np.mean(repnet_data)}, standard dev: {np.std(repnet_data)}")
     print(f"RL average # of weight updates {np.mean(rl_data)}, standard dev: {np.std(rl_data)}")
-    #
-    # plt.title("REPNET and distributed variant versus normal actor-critic RL on the CartPole env:")
-    # plt.xlabel("Running reward")
-    # plt.ylabel("Cumulative training episodes")
-    # plt.show()
+
+    plt.title("REPNET and distributed variant versus normal actor-critic RL on the CartPole env:")
+    plt.xlabel("Running reward")
+    plt.ylabel("Cumulative training episodes")
+    plt.legend()
+    plt.show()

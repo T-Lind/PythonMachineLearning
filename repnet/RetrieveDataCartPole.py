@@ -12,9 +12,10 @@ num_networks_trained = 100
 
 
 def train_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=0.99, max_episodes=10000, learning_rate=0.01,
-                 reward_threshold=195):
+                 reward_threshold=195, seed=None):
     """
     Trains a basic REPNET
+    :param seed: the randomizng seed to train on
     :param threshold_func: the input function to deterimine when to create a new branch
     :param kill_time: the maximum number of episodes from the last time of reproduction
     that a new branch can exist for until it dies
@@ -26,8 +27,9 @@ def train_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=0.99, max_ep
     """
     cartpole = CartPoleEnv()
 
-    seed = random.randrange(0, 100)
-    cartpole.env.seed(seed)
+    if seed is None:
+        seed = random.randrange(0, 100)
+    # cartpole.env.seed(seed)
     tf.random.set_seed(seed)
     np.random.seed(seed)
 
@@ -87,9 +89,10 @@ def train_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=0.99, max_ep
 
 
 def train_distributed_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=0.99, max_episodes=10000,
-                             learning_rate=0.01, reward_threshold=195):
+                             learning_rate=0.01, reward_threshold=195, seed=None):
     """
     Trains REPNET based on the multiprocessing distribution principle
+    :param seed: the randomizing seed to train on
     :param threshold_func: the input function to deterimine when to create a new branch
     :param kill_time: the maximum number of episodes from the last time of reproduction
     that a new branch can exist for until it dies
@@ -101,8 +104,9 @@ def train_distributed_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=
     """
     cartpole = CartPoleEnv()
 
-    seed = random.randrange(0, 100)
-    cartpole.env.seed(seed)
+    if seed is None:
+        seed = random.randrange(0, 100)
+    # cartpole.env.seed(seed)
     tf.random.set_seed(seed)
     np.random.seed(seed)
 
@@ -159,9 +163,10 @@ def train_distributed_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=
     return performance_list
 
 
-def train_rl(gamma=0.99, max_episodes=10000, learning_rate=0.01, reward_threshold=195):
+def train_rl(gamma=0.99, max_episodes=10000, learning_rate=0.01, reward_threshold=195, seed=None):
     """
     Trains a normal actor-critic network
+    :param seed: The randomizing seed to train on
     :param gamma: the discount factor for future rewards
     :param max_episodes: the maximum amount of episodes that can be trained until the training session exits (hard stop)
     :param learning_rate: The learning rate of the Adam optimizer
@@ -169,6 +174,12 @@ def train_rl(gamma=0.99, max_episodes=10000, learning_rate=0.01, reward_threshol
     :return: A list of the running reward every episode
     """
     cartpole = CartPoleEnv()
+
+    if seed is None:
+        seed = random.randrange(0, 100)
+    # cartpole.env.seed(seed)
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
 
     # Small epsilon value for stabilizing division operations
     eps = np.finfo(np.float32).eps.item()
