@@ -6,7 +6,7 @@ import statistics
 import tensorflow as tf
 import tqdm
 from actor_critic import ActorCritic, CartPoleEnv
-from repnet.RepTree import TreeRL
+from dev_repnet.RepTree import TreeRL
 import matplotlib.pyplot as plt
 
 num_networks_trained = 5

@@ -1,4 +1,4 @@
-from repnet import train_repnet, train_rl, train_distributed_repnet
+from dev_repnet import train_repnet, train_rl, train_distributed_repnet
 import matplotlib.pyplot as plt
 import numpy as np
 
