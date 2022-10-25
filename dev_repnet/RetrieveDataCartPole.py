@@ -5,7 +5,8 @@ import numpy as np
 import statistics
 import tensorflow as tf
 import tqdm
-from actor_critic import ActorCritic, CartPoleEnv
+from repnet.ActorCritic import ActorCritic
+from repnet.examples.Cartpole import CartPoleEnv
 from dev_repnet.RepTree import TreeRL
 
 num_networks_trained = 100

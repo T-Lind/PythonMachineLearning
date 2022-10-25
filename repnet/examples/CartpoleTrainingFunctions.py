@@ -5,7 +5,7 @@ import statistics
 import tensorflow as tf
 import tqdm
 
-from repnet.core import TreeRL
+from repnet.core import Tree
 from repnet.ActorCritic import ActorCritic
 from repnet.examples.Cartpole import CartPoleEnv
 
@@ -27,9 +27,9 @@ def train_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=0.99, max_ep
 
     if seed is None:
         seed = random.randrange(0, 100)
-    # cartpole.env.seed(seed)
-    tf.random.set_seed(seed)
-    np.random.seed(seed)
+        # cartpole.env.seed(seed)
+        tf.random.set_seed(seed)
+        np.random.seed(seed)
 
     min_episodes_criterion = 140
     max_steps_per_episode = 1000
@@ -47,23 +47,20 @@ def train_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=0.99, max_ep
     model = ActorCritic(num_actions, num_hidden_units)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-    trunk = TreeRL(kill_time, threshold_func, model)
+    trunk = Tree(kill_time, threshold_func, model)
 
     for end in trunk.get_branch_ends():
         end.weights = model.get_weights()
 
     performance_list = []
 
-    iters = 0
     for i in range(max_episodes):
-        # print(trunk.get_branch_ends())
         for end in trunk.get_branch_ends():
             if end.killed:
                 continue
 
             if end.weights is not None:
                 model.set_weights(end.weights)
-            iters += 1
 
             initial_state = tf.constant(cartpole.env.reset(), dtype=tf.float32)
             episode_reward = int(cartpole.train_step(
@@ -82,7 +79,6 @@ def train_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=0.99, max_ep
             trunk.update_end(end, episode_reward, model.get_weights())
     if performance_list[-1] < reward_threshold:
         return train_repnet()
-    print(len(performance_list))
     return performance_list
 
 
@@ -124,7 +120,7 @@ def train_distributed_repnet(threshold_func=lambda x: 100, kill_time=100, gamma=
     model = ActorCritic(num_actions, num_hidden_units)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-    trunk = TreeRL(kill_time, threshold_func, model)
+    trunk = Tree(kill_time, threshold_func, model)
 
     for end in trunk.get_branch_ends():
         end.weights = model.get_weights()
@@ -187,7 +183,6 @@ def train_rl(gamma=0.99, max_episodes=10000, learning_rate=0.01, reward_threshol
 
     # Cartpole-v0 is considered solved if average reward is >= 195 over 100
     # consecutive trials
-    running_reward = 0
 
     # Keep last episodes reward
     episodes_reward: collections.deque = collections.deque(maxlen=min_episodes_criterion)
