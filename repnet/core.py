@@ -2,13 +2,16 @@ import abc
 import collections
 import random
 import statistics
-import weakref
+import copy
 
 import numpy as np
 import tensorflow as tf
 
+from repnet.ActorCritic import ActorCritic
+from repnet.examples.Cartpole import CartPoleEnv
 
-class Branch(object):
+
+class Branch:
     def __init__(self, max_kill_iters, threshold_func, performance=0, weights=None, generation=0):
         self.max_kill_iters = max_kill_iters
         self.reset_iters = 0
@@ -149,7 +152,8 @@ class Repnet:
                     self.model.set_weights(end.weights)
 
                 initial_state = tf.constant(env_obj.env.reset(), dtype=tf.float32)
-                episode_reward = int(env_obj.train_step(initial_state, self.model, self.optimizer, self.gamma, self.max_steps_per_episode))
+                episode_reward = int(env_obj.train_step(initial_state, self.model, self.optimizer,
+                                                        self.gamma, self.max_steps_per_episode))
 
                 episodes_reward.append(episode_reward)
                 running_reward = statistics.mean(episodes_reward)
@@ -165,5 +169,67 @@ class Repnet:
         if performance_list[-1] < self.running_reward_threshold:
             # TODO: fix the error that's occurring here,
             #  returning none instead of returning the performance list over time
-            return None # self.train(env_obj)
+            return self.train(env_obj)
         return performance_list, self.model.get_weights
+
+
+def train(env_obj=None, max_episodes=10000, tree=None, model=None, optimizer=None, gamma=0.99,
+          max_steps_per_episode=1000,
+          running_reward_threshold=None, min_episodes_criterion=140) ->(list, np.ndarray):
+    """
+    Train the repnet object on the environment object provided. see repnet.examples.Cartpole for an example
+    :param env_obj: the environment object provided that MUST have a train_step function and reference to gym env
+    :param max_episodes: the maximum episodes of training before it exits
+    :param tree: the Tree object to grow
+    :param model: a reference to a basic model that can be trained
+    :param optimizer: the optimization method to use
+    :param gamma: the discount factor for future rewards
+    :param max_steps_per_episode: the maximum amount of steps allowed for one training episode
+    :param running_reward_threshold: when the function should quit
+    :param min_episodes_criterion: the minimum episodes required
+    :return: a list of running reward over time
+    """
+
+    performance_list = []
+    episodes_reward: collections.deque = collections.deque(maxlen=min_episodes_criterion)
+
+    running_reward = 0
+
+    tree.main.weights = model.get_weights()
+
+    for i in range(max_episodes):
+        if tree.main.get_branch_num_ends() == 0:
+            return train(env_obj=env_obj, max_episodes=max_episodes,
+                         tree=Tree(tree.main.max_kill_iters, tree.main.threshold_func), model=ActorCritic(2, 128),
+                         optimizer=optimizer,
+                         gamma=gamma, max_steps_per_episode=max_steps_per_episode,
+                         running_reward_threshold=running_reward_threshold)
+
+        for end in tree.main.get_branch_ends():
+            if end.killed:
+                continue
+
+            if end.weights is not None:
+                model.set_weights(end.weights)
+
+            initial_state = tf.constant(env_obj.env.reset(), dtype=tf.float32)
+            episode_reward = int(env_obj.train_step(initial_state, model, optimizer,
+                                                    gamma, max_steps_per_episode))
+
+            episodes_reward.append(episode_reward)
+            running_reward = statistics.mean(episodes_reward)
+
+            performance_list.append(running_reward)
+
+            end.weights = model.get_weights()
+
+            if running_reward > running_reward_threshold:
+                return performance_list, end.weights
+
+            tree.update_end(end, episode_reward, model.get_weights())
+    if performance_list[-1] < running_reward_threshold:
+        # TODO: fix the error that's occurring here,
+        #  returning none instead of returning the performance list over time
+        return train(env_obj=env_obj, max_episodes=max_episodes, tree=Tree(tree.main.max_kill_iters, tree.main.threshold_func), model=ActorCritic(2, 128), optimizer=optimizer,
+                     gamma=gamma, max_steps_per_episode=max_steps_per_episode, running_reward_threshold=running_reward_threshold)
+    return performance_list, model.get_weights
