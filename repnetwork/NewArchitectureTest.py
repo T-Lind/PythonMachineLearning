@@ -4,7 +4,6 @@ import repnet.core
 from repnet.LogData import print_compile_data
 from repnet.examples.Cartpole import CartPoleEnv
 
-
 if __name__ == '__main__':
     num_networks_train = 10
 
