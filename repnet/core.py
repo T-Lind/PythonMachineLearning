@@ -1,23 +1,29 @@
-import abc
 import collections
 import random
 import statistics
-import copy
+from typing import Callable
 
 import numpy as np
 import tensorflow as tf
 
 from repnet.ActorCritic import ActorCritic
-from repnet.examples.Cartpole import CartPoleEnv
 
 
 class Branch:
-    def __init__(self, max_kill_iters, threshold_func, performance=0, weights=None, generation=0):
+    def __init__(self, max_kill_iters, threshold_func, running_reward=0, weights=None, generation=0):
+        """
+        Create a branch object
+        :param max_kill_iters: the kill time hyperparameter
+        :param threshold_func: a threshold function to determine creation of new branches
+        :param running_reward: the performance of the branch
+        :param weights: the current weigths the branch containts
+        :param generation: the generation the branch is. The first generation is 0 and increments by one.
+        """
         self.max_kill_iters = max_kill_iters
         self.reset_iters = 0
 
         self.threshold_func = threshold_func
-        self.performance = performance
+        self.running_reward = running_reward
         self.weights = weights
         self.child_branches = []
         self.killed = False
@@ -25,6 +31,10 @@ class Branch:
         self.generation = generation
 
     def check_kill(self) -> None:
+        """
+        Determine
+        :return:
+        """
         if self.reset_iters > self.max_kill_iters:
             self.killed = True
 
@@ -52,15 +62,15 @@ class Branch:
             branch_ends.append(child.get_branch_ends())
         return np.array(branch_ends).flatten()
 
-    def update(self, new_performance, new_weights) -> bool:
+    def update(self, new_running_reward, new_weights) -> bool:
         self.check_kill()
         if self.killed:
             return True
 
-        if new_performance - self.performance > self.threshold_func(self.performance):
+        if new_running_reward - self.running_reward > self.threshold_func(self.running_reward):
             self.child_branches.append(Branch(self.max_kill_iters,
                                               self.threshold_func,
-                                              performance=new_performance,
+                                              running_reward=new_running_reward,
                                               weights=new_weights,
                                               generation=self.generation + 1
                                               ))
@@ -79,7 +89,7 @@ class Branch:
 
         if not self.killed:
             ret_str += f"Generation {self.generation}," \
-                       f"Performance: {self.performance}, Iterations since reset: {self.reset_iters}\n"
+                       f"Running reward: {self.running_reward}, Iterations since reset: {self.reset_iters}\n"
         for branch in self.child_branches:
             for i in range(self.generation):
                 ret_str += "    "
@@ -91,26 +101,47 @@ class Branch:
 
 class Tree:
     def __init__(self, max_kill_iters, threshold_func):
+        """
+        Initialize the tree object
+        :param max_kill_iters: the kill time hyperparameter
+        :param threshold_func: a reference to a threshold function
+        """
         self.main = Branch(max_kill_iters, threshold_func)
 
         self.best_weights = None
-        self.best_performance = 0
+        self.best_running_reward = 0
 
         self.max_steps_per_episode = 1000
 
-    def get_num_branch_ends(self):
+    def get_num_branch_ends(self) -> Callable[[], int]:
+        """
+        Get the number of total child branches that exist from this branch
+        :return: the # of branches from this branch
+        """
         return self.main.get_branch_num_ends
 
     def get_branch_ends(self) -> np.array:
+        """
+        Get a list of references to each branch end in a list
+        :return: a list of branch references
+        """
         return self.main.get_branch_ends
 
-    def update_end(self, end, performance, weights) -> bool:
-        if performance > self.best_performance:
+    def update_end(self, end, running_reward, weights) -> bool:
+        """
+        Update a certain branch end as provided through an argument
+        :param end: the reference to the branch object
+        :param running_reward: the performance of the weights stored in the branch
+        :param weights: a reference of the weights
+        :return: a boolean of whether the branch was updated or not
+        """
+        if running_reward > self.best_running_reward:
             self.best_weights = weights
-            self.best_performance = performance
-        return end.update(performance, weights)
+            self.best_running_reward = running_reward
+        return end.update(running_reward, weights)
 
 
+@DeprecationWarning
 class Repnet:
 
     def __init__(self, tree=None, gamma=0.99, max_episodes=10000,
@@ -140,7 +171,7 @@ class Repnet:
         :param env_obj: the environment object provided
         :return: a list of running reward over time
         """
-        performance_list = []
+        running_reward_list = []
         episodes_reward: collections.deque = collections.deque(maxlen=self.min_episodes_criterion)
 
         for i in range(self.max_episodes):
@@ -158,24 +189,24 @@ class Repnet:
                 episodes_reward.append(episode_reward)
                 running_reward = statistics.mean(episodes_reward)
 
-                performance_list.append(running_reward)
+                running_reward_list.append(running_reward)
 
                 end.weights = self.model.get_weights()
 
                 if running_reward > self.running_reward_threshold:
-                    return performance_list, end.weights
+                    return running_reward_list, end.weights
 
                 self.tree.update_end(end, episode_reward, self.model.get_weights())
-        if performance_list[-1] < self.running_reward_threshold:
+        if running_reward_list[-1] < self.running_reward_threshold:
             # TODO: fix the error that's occurring here,
             #  returning none instead of returning the performance list over time
             return self.train(env_obj)
-        return performance_list, self.model.get_weights
+        return running_reward_list, self.model.get_weights
 
 
 def train(env_obj=None, max_episodes=10000, tree=None, model=None, optimizer=None, gamma=0.99,
           max_steps_per_episode=1000,
-          running_reward_threshold=None, min_episodes_criterion=140) ->(list, np.ndarray):
+          running_reward_threshold=None, min_episodes_criterion=140) -> (list, np.ndarray):
     """
     Train the repnet object on the environment object provided. see repnet.examples.Cartpole for an example
     :param env_obj: the environment object provided that MUST have a train_step function and reference to gym env
@@ -190,7 +221,7 @@ def train(env_obj=None, max_episodes=10000, tree=None, model=None, optimizer=Non
     :return: a list of running reward over time
     """
 
-    performance_list = []
+    running_reward_list = []
     episodes_reward: collections.deque = collections.deque(maxlen=min_episodes_criterion)
 
     running_reward = 0
@@ -219,17 +250,20 @@ def train(env_obj=None, max_episodes=10000, tree=None, model=None, optimizer=Non
             episodes_reward.append(episode_reward)
             running_reward = statistics.mean(episodes_reward)
 
-            performance_list.append(running_reward)
+            running_reward_list.append(running_reward)
 
             end.weights = model.get_weights()
 
             if running_reward > running_reward_threshold:
-                return performance_list, end.weights
+                return running_reward_list, end.weights
 
             tree.update_end(end, episode_reward, model.get_weights())
-    if performance_list[-1] < running_reward_threshold:
+    if running_reward_list[-1] < running_reward_threshold:
         # TODO: fix the error that's occurring here,
-        #  returning none instead of returning the performance list over time
-        return train(env_obj=env_obj, max_episodes=max_episodes, tree=Tree(tree.main.max_kill_iters, tree.main.threshold_func), model=ActorCritic(2, 128), optimizer=optimizer,
-                     gamma=gamma, max_steps_per_episode=max_steps_per_episode, running_reward_threshold=running_reward_threshold)
-    return performance_list, model.get_weights
+        #  returning a length of 1 instead of returning the performance list over time
+        return train(env_obj=env_obj, max_episodes=max_episodes,
+                     tree=Tree(tree.main.max_kill_iters, tree.main.threshold_func), model=ActorCritic(2, 128),
+                     optimizer=optimizer,
+                     gamma=gamma, max_steps_per_episode=max_steps_per_episode,
+                     running_reward_threshold=running_reward_threshold)
+    return running_reward_list, model.get_weights
