@@ -1,10 +1,5 @@
-import abc
+import numpy as np
 import math
-
-
-def matmul(list_1, list_2):
-    return [item_1 * item_2 for item_1, item_2 in (list_1, list_2)]
-
 
 def activation(type: str):
     if type == "Sigmoid":
@@ -24,7 +19,7 @@ class DenseNode():
         self.activation_func = activation(activation_type)
 
     def __call__(self, listInputs: list, listWeights: list):
-        return self.activation_func(self.bias + sum(matmul(listInputs, listWeights)))
+        return self.activation_func(self.bias + sum(np.matmul(listInputs, listWeights)))
 
 
 class Dense:
