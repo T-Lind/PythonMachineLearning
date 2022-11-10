@@ -1,31 +1,6 @@
 import math
-
 import numpy as np
-from sklearn.metrics import log_loss
-
-def activation(type: str):
-    if type == "sigmoid":
-        return lambda input: 1 / (1 + math.e ** (-input))
-    if type == "relu":
-        return lambda input: max(0, input)
-    if type == "leaky_relu":
-        return lambda input: input if input > 0 else input * 0.01
-    if type == "tanh":
-        return lambda input: math.tanh(input)
-    if type == "elu":
-        return lambda input: input if input > 0 else math.e ** input - 1
-
-
-def loss(type: str):
-    if type == "empirical":
-        return lambda logits, labels: np.average(np.subtract(logits, labels))
-    if type == "mse":
-        return lambda logits, labels: 1 / len(logits) * sum((labels - logits) ** 2)
-    # if type == "binary_crossentropy":
-
-def optimizer(type: str):
-    if type == "":
-        pass
+from mlp_lib.Functions import activation, loss, optimizer
 
 
 class Layer:
@@ -68,22 +43,22 @@ class Dense(Layer):
 class Network:
     def __init__(self, layer_array):
         self.layers = layer_array
-
     def predict(self, input_data):
         result = input_data
-        for layer in self.layers:
-            result = layer(result)
+        for i in range(len(self.layers)):
+            if i > 0:
+                result = self.layers[i](result, self.layers[i-1])
+            else:
+                result = self.layers[i](result)
         return result
 
 
-layer_1 = Input(3, 3)
-layer_2 = Dense(3, 2, activation_func=activation("relu"))
-layer_3 = Dense(2, 2, activation_func=activation("relu"))
-
-out_1 = layer_2([1, 2, 3], layer_1)
-print(out_1)
-out_2 = layer_3(out_1, layer_2)
-print(out_2)
-
-func = loss("binary_crossentropy")
-print(func([-18.6, 0.51, 2.94, -12.8], [0, 1, 0, 0]))
+# Example network
+network = Network([
+    Input(3, 3),
+    Dense(3, 5, activation_func=activation("leaky_relu")),
+    Dense(5, 128, activation_func=activation("sigmoid")),
+    Dense(128, 2, activation_func=activation("sigmoid")),
+    Dense(2, 1, activation_func=activation("relu")),
+])
+print(network.predict([3, 2, 1]))
