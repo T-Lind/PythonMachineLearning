@@ -1,7 +1,7 @@
 import math
 
 import numpy as np
-
+from sklearn.metrics import log_loss
 
 def activation(type: str):
     if type == "sigmoid":
@@ -14,6 +14,18 @@ def activation(type: str):
         return lambda input: math.tanh(input)
     if type == "elu":
         return lambda input: input if input > 0 else math.e ** input - 1
+
+
+def loss(type: str):
+    if type == "empirical":
+        return lambda logits, labels: np.average(np.subtract(logits, labels))
+    if type == "mse":
+        return lambda logits, labels: 1 / len(logits) * sum((labels - logits) ** 2)
+    # if type == "binary_crossentropy":
+
+def optimizer(type: str):
+    if type == "":
+        pass
 
 
 class Layer:
@@ -53,6 +65,15 @@ class Dense(Layer):
         return output_values
 
 
+class Network:
+    def __init__(self, layer_array):
+        self.layers = layer_array
+
+    def predict(self, input_data):
+        result = input_data
+        for layer in self.layers:
+            result = layer(result)
+        return result
 
 
 layer_1 = Input(3, 3)
@@ -64,3 +85,5 @@ print(out_1)
 out_2 = layer_3(out_1, layer_2)
 print(out_2)
 
+func = loss("binary_crossentropy")
+print(func([-18.6, 0.51, 2.94, -12.8], [0, 1, 0, 0]))

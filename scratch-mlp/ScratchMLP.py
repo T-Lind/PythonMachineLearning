@@ -1,5 +1,7 @@
-import numpy as np
 import math
+
+import numpy as np
+
 
 def activation(type: str):
     if type == "Sigmoid":
@@ -10,7 +12,7 @@ def activation(type: str):
         return lambda input: input if input > 0 else input * 0.01
 
 
-class DenseNode():
+class DenseNode:
     def __init__(self, weight_init=1, activation_type="Sigmoid"):
         self.weight_out = weight_init
 
