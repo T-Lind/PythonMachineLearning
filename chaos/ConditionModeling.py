@@ -1,3 +1,4 @@
+import keras
 import tensorflow as tf
 from keras import activations
 from tensorflow import Tensor
@@ -7,7 +8,7 @@ import matplotlib.pyplot as plt
 import random
 
 num_iters = 100
-seq_len = 20
+seq_len = 10
 
 def generate_data(rate):
     y_vals = [0.5]
@@ -41,28 +42,31 @@ plt.plot(generate_data(3.4)[0], label='r=3.4')
 plt.plot(generate_data(3.75)[0], label='r=3.75')
 plt.legend()
 
-model = tf.keras.models.Sequential([
+model = keras.models.Sequential([
     tf.keras.layers.Flatten(input_shape=(seq_len,)),
     tf.keras.layers.Dense(128, activation=modified_relu),
     tf.keras.layers.Dense(256, activation="sigmoid"),
+    tf.keras.layers.Dense(512, activation="sigmoid"),
+    tf.keras.layers.Dense(1024, activation="relu"),
+    tf.keras.layers.Dense(512, activation="sigmoid"),
     tf.keras.layers.Dense(128, activation="sigmoid"),
     tf.keras.layers.Dense(1, activation=modified_relu)
 ])
 
 model.compile(optimizer='nadam',
-              loss='binary_crossentropy',
+              loss='mse',
               metrics=['accuracy'])
 
-X_train, y_train = generate_n_sequences(10000)
+X_train, y_train = generate_n_sequences(100000)
 seq, rate = generate_data(random.random() + 3)
 pred_tensor = generate_sequence(seq)
 print(rate)
 print(model.predict((pred_tensor,)))
 
 
-# X_test, y_test = generate_n_sequences(100)
-#
-# model(X_train, y_train, epochs=1)
-# print(model.evaluate(X_test, y_test))
-# print(y_test)
+X_test, y_test = generate_n_sequences(100)
+
+model.fit(X_train, y_train, epochs=10)
+print(model.evaluate(X_test, y_test))
+print(y_test)
 plt.show()
