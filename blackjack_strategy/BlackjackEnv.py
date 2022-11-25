@@ -28,8 +28,6 @@ class BlackjackEnv:
         if not self.cards.is_empty():
             self.hands[hand] += self.cards.draw()
 
-
-
     def __str__(self):
         ret_str = "Current game hands:\n"
         for i in range(len(self.hands)):
