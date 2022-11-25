@@ -182,7 +182,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 def format_obs(obs):
     action_possibilities = np.array([])
-    for single_observation in obs.values():
+    for single_observation in obs.two_cards():
         action_possibilities = np.concatenate((np.array(single_observation).flatten(), action_possibilities))
     return action_possibilities
 
