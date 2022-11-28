@@ -16,10 +16,10 @@ class Deck:
 
 
 class BlackjackEnv:
-    def __init__(self, n_players):
+    def __init__(self, n_players, n_decks=1):
         self.cards = Deck()
 
-        self.hands = [self.cards.draw() + self.cards.draw() for _ in range(n_players)]
+        self.hands = [self.cards.draw() + self.cards.draw() for _ in range(n_players)] * n_decks
 
     def check_over(self, hand) -> bool:
         return self.hands[hand] > 21
