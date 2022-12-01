@@ -14,8 +14,8 @@ if __name__ == '__main__':
         two_cards.append(value)
         three_cards.append(value + deck.draw())
 
-    plt.hist(two_cards, 20, color="orange", alpha=0.7, label="Two drawn cards sum")
-    plt.hist(three_cards, 20, color="red", alpha=0.7, label="Three drawn cards sum")
+    plt.hist(two_cards, 20, color="orange", alpha=0.6, label="Two drawn cards sum")
+    plt.hist(three_cards, 20, color="red", alpha=0.6, label="Three drawn cards sum")
 
     print(f"Two cards mean: {np.mean(two_cards)}, median: {np.median(two_cards)}, st. dev: {np.std(two_cards)}")
     print(f"Three cards mean: {np.mean(three_cards)}, median: {np.median(three_cards)}, st. dev: {np.std(three_cards)}")
