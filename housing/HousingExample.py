@@ -5,7 +5,8 @@ from pandas.plotting import scatter_matrix
 from support import *
 
 # Get the housing.csv file from my datasets
-housing: DataFrame = pd.read_csv(DATASETS+"housing.csv")
+housing: DataFrame = pd.read_csv(
+    "C:\\Users\\lindauer_927142\\PycharmProjects\\PythonMachineLearning\\mydatasets\\housing.csv")
 
 # define the default font sizes
 plt.rc('font', size=14)
@@ -26,7 +27,7 @@ print(corr_matrix["median_house_value"].sort_values(ascending=False))
 
 # Show a 4x4 plot of the below four attributes against each other to show correlations easier
 attributes: list = ["median_house_value", "median_income", "total_rooms",
-              "housing_median_age"]
+                    "housing_median_age"]
 scatter_matrix(housing[attributes], figsize=(12, 8))
 plt.show()
 
@@ -38,4 +39,3 @@ housing["people_per_house"] = housing["population"] / housing["households"]
 # Create the new correlation matrix
 corr_matrix: DataFrame = housing.corr()
 print(corr_matrix["median_house_value"].sort_values(ascending=False))
-
